@@ -21,7 +21,7 @@ import {
 } from "lucide-react";
 
 // Ícones dos Módulos do Sistema Hospitalar
-const IconRecepcao = ({ color = "#f97316" }) => (
+const IconRecepcao = ({ color = "#10b981" }) => (
   <svg width="44" height="44" viewBox="0 0 24 24" fill="none">
     <path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2" stroke={color} strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" fill={color + "18"} />
     <circle cx="9" cy="7" r="4" stroke={color} strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" fill={color + "28"} />
@@ -34,10 +34,10 @@ const ALL_MODULES = [
     key: "recepcao",
     label: "Recepção Central",
     sub: "Admissão & Leitos",
-    color: "#f97316", // Laranja padrão idêntico ao modelo Farmácia
-    glow: "rgba(249,115,22,0.35)",
-    border: "rgba(249,115,22,0.5)",
-    bg: "rgba(249,115,22,0.1)",
+    color: "#10b981", // Verde hospitalar elegante
+    glow: "rgba(16,185,129,0.35)",
+    border: "rgba(16,185,129,0.5)",
+    bg: "rgba(16,185,129,0.1)",
     Icon: IconRecepcao,
     isAvailableInThisApp: true
   }
@@ -507,12 +507,12 @@ export function WelcomeScreenRecepcao({ onEnter }) {
           <div
             style={{
               background: "#0c1322",
-              border: "1px solid rgba(249, 115, 22, 0.28)",
+              border: "1px solid rgba(16, 185, 129, 0.3)",
               borderRadius: 22,
               padding: "30px 26px 26px",
               width: "100%",
               maxWidth: 380,
-              boxShadow: "0 0 35px rgba(249, 115, 22, 0.14), 0 25px 60px rgba(0,0,0,0.8)",
+              boxShadow: "0 0 35px rgba(16, 185, 129, 0.15), 0 25px 60px rgba(0,0,0,0.8)",
               position: "relative",
               transition: "all 0.3s ease",
             }}
@@ -543,14 +543,14 @@ export function WelcomeScreenRecepcao({ onEnter }) {
                 width: 46,
                 height: 46,
                 borderRadius: 14,
-                background: "rgba(249, 115, 22, 0.08)",
-                border: "1.5px solid rgba(249, 115, 22, 0.45)",
+                background: "rgba(16, 185, 129, 0.1)",
+                border: "1.5px solid rgba(16, 185, 129, 0.45)",
                 display: "flex",
                 alignItems: "center",
                 justifyContent: "center",
                 flexShrink: 0
               }}>
-                <selectedModule.Icon color="#f97316" />
+                <selectedModule.Icon color="#10b981" />
               </div>
               <div>
                 <h3 style={{ margin: 0, fontSize: 18, fontWeight: 700, color: "#f8fafc" }}>
@@ -589,8 +589,8 @@ export function WelcomeScreenRecepcao({ onEnter }) {
                       transition: "border-color 0.2s, box-shadow 0.2s"
                     }}
                     onFocus={e => {
-                      e.target.style.borderColor = "#f97316";
-                      e.target.style.boxShadow = "0 0 0 1px rgba(249, 115, 22, 0.35)";
+                      e.target.style.borderColor = "#10b981";
+                      e.target.style.boxShadow = "0 0 0 1px rgba(16, 185, 129, 0.35)";
                     }}
                     onBlur={e => {
                       e.target.style.borderColor = "#24344d";
@@ -641,8 +641,8 @@ export function WelcomeScreenRecepcao({ onEnter }) {
                       transition: "border-color 0.2s, box-shadow 0.2s"
                     }}
                     onFocus={e => {
-                      e.target.style.borderColor = "#f97316";
-                      e.target.style.boxShadow = "0 0 0 1px rgba(249, 115, 22, 0.35)";
+                      e.target.style.borderColor = "#10b981";
+                      e.target.style.boxShadow = "0 0 0 1px rgba(16, 185, 129, 0.35)";
                     }}
                     onBlur={e => {
                       e.target.style.borderColor = "#24344d";
@@ -657,17 +657,17 @@ export function WelcomeScreenRecepcao({ onEnter }) {
                     marginTop: 6,
                     padding: "13px",
                     borderRadius: 11,
-                    background: "#f97316",
+                    background: "#10b981",
                     color: "#ffffff",
                     border: "none",
                     fontWeight: 700,
                     fontSize: 15,
                     cursor: "pointer",
-                    boxShadow: "0 4px 18px rgba(249, 115, 22, 0.4)",
+                    boxShadow: "0 4px 18px rgba(16, 185, 129, 0.4)",
                     transition: "all 0.2s ease"
                   }}
-                  onMouseEnter={e => e.currentTarget.style.background = "#ea580c"}
-                  onMouseLeave={e => e.currentTarget.style.background = "#f97316"}
+                  onMouseEnter={e => e.currentTarget.style.background = "#059669"}
+                  onMouseLeave={e => e.currentTarget.style.background = "#10b981"}
                 >
                   Entrar no Módulo
                 </button>
@@ -675,7 +675,7 @@ export function WelcomeScreenRecepcao({ onEnter }) {
             ) : (
               /* FORMULÁRIO DE PRIMEIRO ACESSO */
               <form onSubmit={handlePasswordChange} style={{ display: "flex", flexDirection: "column", gap: 14 }}>
-                <div style={{ background: "rgba(249, 115, 22, 0.1)", border: "1px solid rgba(249, 115, 22, 0.3)", padding: 12, borderRadius: 12, fontSize: 12, color: "#fb923c" }}>
+                <div style={{ background: "rgba(16, 185, 129, 0.1)", border: "1px solid rgba(16, 185, 129, 0.3)", padding: 12, borderRadius: 12, fontSize: 12, color: "#34d399" }}>
                   <strong>Primeiro Acesso Detectado:</strong> Por segurança, crie uma nova senha de acesso pessoal.
                 </div>
 
@@ -733,16 +733,16 @@ export function WelcomeScreenRecepcao({ onEnter }) {
                     marginTop: 6,
                     padding: "13px",
                     borderRadius: 11,
-                    background: "#f97316",
+                    background: "#10b981",
                     color: "#ffffff",
                     border: "none",
                     fontWeight: 700,
                     fontSize: 15,
                     cursor: "pointer",
-                    boxShadow: "0 4px 18px rgba(249, 115, 22, 0.4)"
+                    boxShadow: "0 4px 18px rgba(16, 185, 129, 0.4)"
                   }}
-                  onMouseEnter={e => e.currentTarget.style.background = "#ea580c"}
-                  onMouseLeave={e => e.currentTarget.style.background = "#f97316"}
+                  onMouseEnter={e => e.currentTarget.style.background = "#059669"}
+                  onMouseLeave={e => e.currentTarget.style.background = "#10b981"}
                 >
                   Salvar Nova Senha e Acessar
                 </button>
