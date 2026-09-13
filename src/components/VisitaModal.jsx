@@ -4,8 +4,9 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { toast } from "sonner";
-import { UserCheck, Clock, CreditCard, FileText, User, Bed, Search, Building2, Calendar, Sparkles } from "lucide-react";
+import { UserCheck, Clock, CreditCard, FileText, User, Bed, Search, Building2, Calendar, Sparkles, Camera, ShieldAlert } from "lucide-react";
 import { VisitaService } from "@/api/db";
+import { PhotoCaptureField } from "@/components/ui/PhotoCaptureField";
 
 export function VisitaModal({ open, onOpenChange, activePatients = [], currentUser = null, onSaved }) {
   const [pacienteSearch, setPacienteSearch] = useState("");
@@ -17,6 +18,9 @@ export function VisitaModal({ open, onOpenChange, activePatients = [], currentUs
   const [dataEntrada, setDataEntrada] = useState("");
   const [horaEntrada, setHoraEntrada] = useState("");
   const [observacoes, setObservacoes] = useState("");
+  const [fotoVisitante, setFotoVisitante] = useState("");
+  const [fotoRecusada, setFotoRecusada] = useState(false);
+  const [fotoRecusadaMotivo, setFotoRecusadaMotivo] = useState("");
   const [isSubmitting, setIsSubmitting] = useState(false);
 
   // Formatação inicial de data e hora atual (seguro, sem travamento de tela)
@@ -49,6 +53,9 @@ export function VisitaModal({ open, onOpenChange, activePatients = [], currentUs
       setDataEntrada(getTodayFormatted());
       setHoraEntrada(getTimeFormatted());
       setObservacoes("");
+      setFotoVisitante("");
+      setFotoRecusada(false);
+      setFotoRecusadaMotivo("");
       setIsSubmitting(false);
     }
   }, [open]);
@@ -171,6 +178,9 @@ export function VisitaModal({ open, onOpenChange, activePatients = [], currentUs
         dataHoraEntrada: finalIso,
         observacoes: observacoes.trim(),
         recepcionista: currentUser?.nome || "Recepção",
+        foto: fotoRecusada ? null : (fotoVisitante || null),
+        foto_recusada: fotoRecusada,
+        foto_recusada_motivo: fotoRecusada ? (fotoRecusadaMotivo.trim() || "Visitante recusou tirar foto") : null,
       });
 
       toast.success(`Visita registrada com sucesso para ${selectedPatient.nome}!`);
@@ -280,6 +290,56 @@ export function VisitaModal({ open, onOpenChange, activePatients = [], currentUs
 
           {/* Seção 2: Dados do Visitante */}
           <div className="space-y-3">
+            {/* Foto do Visitante + Opção de Recusa */}
+            <div className="p-3.5 bg-slate-50 border border-slate-200/90 rounded-2xl space-y-3">
+              <PhotoCaptureField
+                value={fotoVisitante}
+                onChange={setFotoVisitante}
+                disabled={fotoRecusada}
+                label="Foto do Visitante"
+                helperText="Capture a foto do visitante pela webcam ou carregue um arquivo"
+              />
+
+              {/* Checklist / Termo de recusa de foto */}
+              <div className="pt-2.5 border-t border-slate-200/80">
+                <label className="flex items-start gap-2.5 cursor-pointer select-none">
+                  <input
+                    type="checkbox"
+                    checked={fotoRecusada}
+                    onChange={(e) => {
+                      const checked = e.target.checked;
+                      setFotoRecusada(checked);
+                      if (checked) setFotoVisitante("");
+                    }}
+                    className="w-4 h-4 mt-0.5 rounded border-slate-300 text-amber-600 focus:ring-amber-500 cursor-pointer"
+                  />
+                  <div>
+                    <span className="text-xs font-bold text-slate-800 flex items-center gap-1.5">
+                      <ShieldAlert className="w-3.5 h-3.5 text-amber-600 shrink-0" />
+                      Visitante recusou tirar foto / Termo de recusa
+                    </span>
+                    <p className="text-[11px] text-slate-500 mt-0.5">
+                      Marque esta opção para permitir a entrada sem foto caso o visitante exerça o direito de recusa.
+                    </p>
+                  </div>
+                </label>
+
+                {fotoRecusada && (
+                  <div className="mt-2.5 pl-6 animate-in fade-in space-y-1.5">
+                    <Label className="text-[11px] font-semibold text-amber-800">
+                      Motivo ou Observação da Recusa (opcional):
+                    </Label>
+                    <Input
+                      value={fotoRecusadaMotivo}
+                      onChange={(e) => setFotoRecusadaMotivo(e.target.value)}
+                      placeholder="Ex: Motivo pessoal, pressa, solicitou dispensa..."
+                      className="h-8 text-xs bg-white border-amber-300 focus-visible:ring-amber-500"
+                    />
+                  </div>
+                )}
+              </div>
+            </div>
+
             <div>
               <Label className="text-xs font-semibold text-slate-700 flex items-center gap-1.5 mb-1.5">
                 <User className="w-3.5 h-3.5 text-slate-500" />

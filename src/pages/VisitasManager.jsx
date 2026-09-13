@@ -269,11 +269,31 @@ export function VisitasManager({
                     <tr key={v.id} className="hover:bg-slate-50/80 transition-colors">
                       {/* Visitante */}
                       <td className="py-3.5 px-4">
-                        <div className="font-bold text-slate-900 text-xs">
-                          {v.visitanteNome}
-                        </div>
-                        <div className="text-[11px] text-slate-500 mt-0.5">
-                          {v.parentesco ? `Vínculo: ${v.parentesco}` : "Visitante"}
+                        <div className="flex items-center gap-2.5">
+                          <div className="w-9 h-9 rounded-full bg-slate-100 border border-slate-200 flex items-center justify-center shrink-0 overflow-hidden shadow-xs">
+                            {v.foto ? (
+                              <img src={v.foto} alt={v.visitanteNome} className="w-full h-full object-cover" />
+                            ) : v.foto_recusada ? (
+                              <div className="w-full h-full bg-amber-50 flex items-center justify-center text-amber-700 font-bold text-xs" title={v.foto_recusada_motivo || "Foto recusada pelo visitante"}>
+                                🚫
+                              </div>
+                            ) : (
+                              <User className="w-4 h-4 text-slate-400" />
+                            )}
+                          </div>
+                          <div>
+                            <div className="font-bold text-slate-900 text-xs flex items-center gap-1.5 flex-wrap">
+                              <span>{v.visitanteNome}</span>
+                              {v.foto_recusada && (
+                                <Badge variant="outline" className="text-[9px] font-bold py-0 px-1.5 bg-amber-50 text-amber-700 border-amber-300" title={v.foto_recusada_motivo || "Termo de recusa registrado"}>
+                                  Recusa Foto
+                                </Badge>
+                              )}
+                            </div>
+                            <div className="text-[11px] text-slate-500 mt-0.5">
+                              {v.parentesco ? `Vínculo: ${v.parentesco}` : "Visitante"}
+                            </div>
+                          </div>
                         </div>
                       </td>
 

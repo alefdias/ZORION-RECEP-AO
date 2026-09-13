@@ -1,4 +1,4 @@
-import React, { useMemo } from "react";
+import React, { useState, useMemo } from "react";
 import { 
   Users, 
   UserCheck, 
@@ -12,13 +12,15 @@ import {
   CheckCircle2, 
   AlertCircle,
   ArrowRight,
-  Edit2
+  Edit2,
+  FileText
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { format } from "date-fns";
 import { ptBR } from "date-fns/locale";
 import { getAlaCapacity } from "@/api/db";
+import { RecepcaoRelatorioModal } from "@/components/RecepcaoRelatorioModal";
 
 export function RecepcaoDashboard({ 
   metrics, 
@@ -29,6 +31,8 @@ export function RecepcaoDashboard({
   onDarAlta, 
   onGoToPatients 
 }) {
+  const [relatorioModalOpen, setRelatorioModalOpen] = useState(false);
+  const [relatorioType, setRelatorioType] = useState("admissoes");
   const isPatientAlta = (p) => {
     if (!p) return false;
     const statusStr = String(p.status || "").trim().toLowerCase();
@@ -117,15 +121,18 @@ export function RecepcaoDashboard({
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
         {/* Total Internados */}
         <div 
-          onClick={() => onGoToPatients && onGoToPatients("ativo")}
-          className="bg-white p-5 rounded-2xl border border-slate-200/80 shadow-sm hover:shadow-md transition-all cursor-pointer group"
-          title="Clique para ver os pacientes internados"
+          onClick={() => {
+            setRelatorioType("internados");
+            setRelatorioModalOpen(true);
+          }}
+          className="bg-white p-5 rounded-2xl border border-slate-200/80 shadow-sm hover:shadow-xl hover:border-sky-400 hover:-translate-y-0.5 transition-all cursor-pointer group relative overflow-hidden"
+          title="Clique para abrir a janela de detalhes e emitir relatório de Pacientes Internados"
         >
           <div className="flex items-center justify-between">
             <span className="text-xs font-bold uppercase tracking-wider text-slate-500 group-hover:text-sky-600 transition-colors">
               Pacientes Internados
             </span>
-            <div className="p-2.5 rounded-xl bg-sky-50 text-sky-600 group-hover:scale-110 transition-transform">
+            <div className="p-2.5 rounded-xl bg-sky-50 text-sky-600 group-hover:scale-110 group-hover:bg-sky-600 group-hover:text-white transition-all shadow-xs">
               <Users className="w-5 h-5" />
             </div>
           </div>
@@ -137,13 +144,26 @@ export function RecepcaoDashboard({
             </span>
           </div>
           <p className="mt-1 text-xs text-slate-400">Ocupando leitos nas alas</p>
+          <div className="mt-3 pt-2 border-t border-slate-100 flex items-center justify-between text-[11px] font-semibold text-sky-600 group-hover:text-sky-700">
+            <span>Ver detalhes & relatório</span>
+            <span className="group-hover:translate-x-1 transition-transform">→</span>
+          </div>
         </div>
 
         {/* Admissões Hoje */}
-        <div className="bg-white p-5 rounded-2xl border border-slate-200/80 shadow-sm hover:shadow-md transition-shadow">
+        <div 
+          onClick={() => {
+            setRelatorioType("admissoes");
+            setRelatorioModalOpen(true);
+          }}
+          className="bg-white p-5 rounded-2xl border border-slate-200/80 shadow-sm hover:shadow-xl hover:border-emerald-400 hover:-translate-y-0.5 transition-all cursor-pointer group relative overflow-hidden"
+          title="Clique para abrir a janela de detalhes e emitir relatório de Admissões (1d, 1m, 1ano, personalizado)"
+        >
           <div className="flex items-center justify-between">
-            <span className="text-xs font-bold uppercase tracking-wider text-slate-500">Admissões Hoje</span>
-            <div className="p-2.5 rounded-xl bg-emerald-50 text-emerald-600">
+            <span className="text-xs font-bold uppercase tracking-wider text-slate-500 group-hover:text-emerald-600 transition-colors">
+              Admissões Hoje
+            </span>
+            <div className="p-2.5 rounded-xl bg-emerald-50 text-emerald-600 group-hover:scale-110 group-hover:bg-emerald-600 group-hover:text-white transition-all shadow-xs">
               <Clock className="w-5 h-5" />
             </div>
           </div>
@@ -152,19 +172,26 @@ export function RecepcaoDashboard({
             <span className="text-xs font-medium text-slate-500">cadastros</span>
           </div>
           <p className="mt-1 text-xs text-slate-400">Entradas registradas nas últimas 24h</p>
+          <div className="mt-3 pt-2 border-t border-slate-100 flex items-center justify-between text-[11px] font-semibold text-emerald-600 group-hover:text-emerald-700">
+            <span>Ver histórico & relatório</span>
+            <span className="group-hover:translate-x-1 transition-transform">→</span>
+          </div>
         </div>
 
         {/* Altas Registradas */}
         <div 
-          onClick={() => onGoToPatients && onGoToPatients("alta")}
-          className="bg-white p-5 rounded-2xl border border-slate-200/80 shadow-sm hover:shadow-md transition-all cursor-pointer group"
-          title="Clique para ver o histórico de altas concedidas"
+          onClick={() => {
+            setRelatorioType("altas");
+            setRelatorioModalOpen(true);
+          }}
+          className="bg-white p-5 rounded-2xl border border-slate-200/80 shadow-sm hover:shadow-xl hover:border-amber-400 hover:-translate-y-0.5 transition-all cursor-pointer group relative overflow-hidden"
+          title="Clique para abrir a janela de detalhes e emitir relatório de Altas Concedidas"
         >
           <div className="flex items-center justify-between">
             <span className="text-xs font-bold uppercase tracking-wider text-slate-500 group-hover:text-amber-600 transition-colors">
               Altas Concedidas
             </span>
-            <div className="p-2.5 rounded-xl bg-amber-50 text-amber-600 group-hover:scale-110 transition-transform">
+            <div className="p-2.5 rounded-xl bg-amber-50 text-amber-600 group-hover:scale-110 group-hover:bg-amber-600 group-hover:text-white transition-all shadow-xs">
               <LogOut className="w-5 h-5" />
             </div>
           </div>
@@ -175,6 +202,10 @@ export function RecepcaoDashboard({
             </span>
           </div>
           <p className="mt-1 text-xs text-slate-400">Leitos liberados</p>
+          <div className="mt-3 pt-2 border-t border-slate-100 flex items-center justify-between text-[11px] font-semibold text-amber-600 group-hover:text-amber-700">
+            <span>Ver histórico & relatório</span>
+            <span className="group-hover:translate-x-1 transition-transform">→</span>
+          </div>
         </div>
 
         {/* Total de Alas */}
@@ -339,6 +370,15 @@ export function RecepcaoDashboard({
           </div>
         )}
       </div>
+
+      {/* Modal de Detalhamento e Relatório das Métricas (Admissões, Internados, Altas) */}
+      <RecepcaoRelatorioModal
+        open={relatorioModalOpen}
+        onOpenChange={setRelatorioModalOpen}
+        initialType={relatorioType}
+        patients={patients}
+        alas={alas}
+      />
     </div>
   );
 }

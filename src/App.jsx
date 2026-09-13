@@ -18,6 +18,7 @@ import { PacientesList } from "@/pages/PacientesList";
 import { VisitasManager } from "@/pages/VisitasManager";
 import { PacienteService, AlaService, VisitaService, EstatisticasService, initDbListener } from "@/api/db";
 import { WelcomeScreenRecepcao } from "@/components/WelcomeScreenRecepcao";
+import { ZorionChatWidget } from "@/components/chat/ZorionChatWidget";
 import { toast } from "sonner";
 import { listen } from "@tauri-apps/api/event";
 
@@ -318,6 +319,9 @@ export function App() {
       <footer className="py-4 border-t border-slate-200/80 bg-white text-center text-xs text-slate-400">
         <p>Zorion Saúde © {new Date().getFullYear()} — Módulo Recepção & Internações</p>
       </footer>
+
+      {/* Chat Zorion Flutuante no Canto Inferior Direito */}
+      <ZorionChatWidget currentUser={currentUser} />
     </div>
   );
 }

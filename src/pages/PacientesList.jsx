@@ -11,7 +11,8 @@ import {
   CheckCircle2, 
   History, 
   Calendar,
-  Filter
+  Filter,
+  User
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -184,12 +185,23 @@ export function PacientesList({
                       </td>
 
                       <td className="py-4 px-6">
-                        <div className="font-bold text-slate-900 text-sm">{p.nome}</div>
-                        {p.observacoes && (
-                          <div className="text-[11px] text-slate-400 truncate max-w-sm" title={p.observacoes}>
-                            {p.observacoes}
+                        <div className="flex items-center gap-3">
+                          <div className="w-9 h-9 rounded-full bg-slate-100 border border-slate-200 flex items-center justify-center shrink-0 overflow-hidden shadow-xs">
+                            {p.foto ? (
+                              <img src={p.foto} alt={p.nome} className="w-full h-full object-cover" />
+                            ) : (
+                              <User className="w-4 h-4 text-slate-400" />
+                            )}
                           </div>
-                        )}
+                          <div>
+                            <div className="font-bold text-slate-900 text-sm">{p.nome}</div>
+                            {p.observacoes && (
+                              <div className="text-[11px] text-slate-400 truncate max-w-sm" title={p.observacoes}>
+                                {p.observacoes}
+                              </div>
+                            )}
+                          </div>
+                        </div>
                       </td>
 
                       <td className="py-4 px-6">

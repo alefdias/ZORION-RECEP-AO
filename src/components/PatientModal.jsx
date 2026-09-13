@@ -7,11 +7,13 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { toast } from "sonner";
 import { UserPlus, UserCheck, AlertTriangle, AlertCircle, History, RotateCcw, Bed, Building2, User, FileText } from "lucide-react";
 import { PacienteService } from "@/api/db";
+import { PhotoCaptureField } from "@/components/ui/PhotoCaptureField";
 
 export function PatientModal({ open, onOpenChange, patient = null, alas = [], allPatients = [], onSaved }) {
   const isEditing = Boolean(patient?.id);
 
   const [formData, setFormData] = useState({
+    foto: "",
     nome: "",
     prontuario: "",
     idade: "",
@@ -27,6 +29,7 @@ export function PatientModal({ open, onOpenChange, patient = null, alas = [], al
   useEffect(() => {
     if (patient) {
       setFormData({
+        foto: patient.foto || "",
         nome: patient.nome || "",
         prontuario: patient.prontuario || "",
         idade: patient.idade ? String(patient.idade) : "",
@@ -37,6 +40,7 @@ export function PatientModal({ open, onOpenChange, patient = null, alas = [], al
       });
     } else {
       setFormData({
+        foto: "",
         nome: "",
         prontuario: "",
         idade: "",
@@ -125,9 +129,10 @@ export function PatientModal({ open, onOpenChange, patient = null, alas = [], al
             alaNome: formData.alaNome,
             leito: formData.leito,
             observacoes: formData.observacoes,
+            foto: formData.foto,
           });
           // Se o nome foi editado, atualiza também
-          if (formData.nome !== prontuarioCheck.dischargedPatient.nome || formData.idade) {
+          if (formData.nome !== prontuarioCheck.dischargedPatient.nome || formData.idade || formData.foto) {
             await PacienteService.update(prontuarioCheck.dischargedPatient.id, formData);
           }
           toast.success("Paciente reinternado com sucesso!");
@@ -168,6 +173,14 @@ export function PatientModal({ open, onOpenChange, patient = null, alas = [], al
         </DialogHeader>
 
         <form onSubmit={handleSubmit} className="space-y-4 py-2">
+          {/* Captura de Foto do Paciente */}
+          <PhotoCaptureField
+            value={formData.foto}
+            onChange={(foto) => setFormData(prev => ({ ...prev, foto }))}
+            label="Foto do Paciente"
+            helperText="Tire uma foto pela webcam ou carregue do computador"
+          />
+
           {/* Identificação de Prontuário */}
           <div>
             <Label className="text-xs font-semibold text-slate-700 flex items-center gap-1.5">

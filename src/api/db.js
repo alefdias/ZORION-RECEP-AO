@@ -64,6 +64,7 @@ export async function ensureRecepcaoTables() {
     ALTER TABLE "Paciente" ADD COLUMN IF NOT EXISTS "status" TEXT DEFAULT 'Ativo';
     ALTER TABLE "Paciente" ADD COLUMN IF NOT EXISTS "observacoes" TEXT;
     ALTER TABLE "Paciente" ADD COLUMN IF NOT EXISTS "dataAlta" TEXT;
+    ALTER TABLE "Paciente" ADD COLUMN IF NOT EXISTS "foto" TEXT;
     ALTER TABLE "Paciente" ADD COLUMN IF NOT EXISTS "created_at" TEXT;
     ALTER TABLE "Paciente" ADD COLUMN IF NOT EXISTS "deleted_at" TEXT;
 
@@ -183,6 +184,9 @@ export async function ensureRecepcaoTables() {
     ALTER TABLE "Visita" ADD COLUMN IF NOT EXISTS "status" TEXT DEFAULT 'Em Andamento';
     ALTER TABLE "Visita" ADD COLUMN IF NOT EXISTS "observacoes" TEXT;
     ALTER TABLE "Visita" ADD COLUMN IF NOT EXISTS "recepcionista" TEXT;
+    ALTER TABLE "Visita" ADD COLUMN IF NOT EXISTS "foto" TEXT;
+    ALTER TABLE "Visita" ADD COLUMN IF NOT EXISTS "foto_recusada" BOOLEAN DEFAULT false;
+    ALTER TABLE "Visita" ADD COLUMN IF NOT EXISTS "foto_recusada_motivo" TEXT;
     ALTER TABLE "Visita" ADD COLUMN IF NOT EXISTS "created_at" TEXT;
     ALTER TABLE "Visita" ADD COLUMN IF NOT EXISTS "deleted_at" TEXT;
   `;
@@ -290,16 +294,19 @@ export const PacienteService = {
     const safeAlaId = (data.alaId || "").replace(/'/g, "''");
     const safeAlaNome = (data.alaNome || "").replace(/'/g, "''");
     const safeObs = (data.observacoes || "").replace(/'/g, "''");
+    const safeFoto = data.foto ? `'${data.foto.replace(/'/g, "''")}'` : "NULL";
     const idade = data.idade ? parseInt(data.idade, 10) : null;
     const idadeSql = idade !== null && !isNaN(idade) ? idade : "NULL";
 
     const q = `
       INSERT INTO "Paciente" (
-        "id", "nome", "prontuario", "idade", "alaId", "alaNome", "leito", "status", "observacoes", "dataAlta", "created_at"
+        "id", "nome", "prontuario", "idade", "alaId", "alaNome", "leito", "status", "observacoes", "dataAlta", "foto", "created_at"
       ) VALUES (
-        '${id}', '${safeNome}', '${safeProntuario}', ${idadeSql}, '${safeAlaId}', '${safeAlaNome}', '${safeLeito}', 'Ativo', '${safeObs}', NULL, '${now}'
+        '${id}', '${safeNome}', '${safeProntuario}', ${idadeSql}, '${safeAlaId}', '${safeAlaNome}', '${safeLeito}', 'Ativo', '${safeObs}', NULL, ${safeFoto}, '${now}'
       );
       NOTIFY nova_admissao, '${safeNome}|${safeAlaNome}|${safeLeito}';
+      NOTIFY table_change, 'Paciente';
+      NOTIFY app_update, 'Paciente';
     `;
 
     await executePostgres(q);
@@ -314,6 +321,9 @@ export const PacienteService = {
     const safeAlaId = (data.alaId || "").replace(/'/g, "''");
     const safeAlaNome = (data.alaNome || "").replace(/'/g, "''");
     const safeObs = (data.observacoes || "").replace(/'/g, "''");
+    const fotoClause = data.foto !== undefined
+      ? `, "foto" = ${data.foto ? `'${data.foto.replace(/'/g, "''")}'` : "NULL"}`
+      : "";
     const idade = data.idade ? parseInt(data.idade, 10) : null;
     const idadeSql = idade !== null && !isNaN(idade) ? idade : "NULL";
 
@@ -326,7 +336,10 @@ export const PacienteService = {
         "alaNome" = '${safeAlaNome}',
         "leito" = '${safeLeito}',
         "observacoes" = '${safeObs}'
+        ${fotoClause}
       WHERE "id" = '${id}';
+      NOTIFY table_change, 'Paciente';
+      NOTIFY app_update, 'Paciente';
     `;
 
     await executePostgres(q);
@@ -348,13 +361,14 @@ export const PacienteService = {
     await logAuditoria("ALTA_HOSPITALAR", id, { dataAlta: now, motivo: observacaoAlta });
   },
 
-  async reinternar(id, { nome, alaId, alaNome, leito, observacoes = "" }) {
+  async reinternar(id, { nome, alaId, alaNome, leito, observacoes = "", foto = null }) {
     const now = new Date().toISOString();
     const safeAlaId = (alaId || "").replace(/'/g, "''");
     const safeAlaNome = (alaNome || "").replace(/'/g, "''");
     const safeLeito = (leito || "").trim().replace(/'/g, "''");
     const safeNome = (nome || "Paciente").trim().replace(/'/g, "''");
     const reinternacaoNote = ` [Reinternado em ${new Date().toLocaleDateString('pt-BR')}] ${observacoes || ""}`.replace(/'/g, "''");
+    const fotoClause = foto ? `, "foto" = '${foto.replace(/'/g, "''")}'` : '';
 
     const q = `
       UPDATE "Paciente" SET
@@ -365,8 +379,11 @@ export const PacienteService = {
         "leito" = '${safeLeito}',
         "created_at" = '${now}',
         "observacoes" = COALESCE("observacoes", '') || '${reinternacaoNote}'
+        ${fotoClause}
       WHERE "id" = '${id}';
       NOTIFY nova_admissao, '${safeNome}|${safeAlaNome}|${safeLeito}';
+      NOTIFY table_change, 'Paciente';
+      NOTIFY app_update, 'Paciente';
     `;
     await executePostgres(q);
     await logAuditoria("REINTERNACAO", id, { alaNome, leito, reinternadoEm: now });
@@ -522,20 +539,25 @@ export const VisitaService = {
     const safeEntrada = (data.dataHoraEntrada || now).replace(/'/g, "''");
     const safeObs = (data.observacoes || "").replace(/'/g, "''");
     const safeRecepcionista = (data.recepcionista || "Recepção").replace(/'/g, "''");
+    const safeFoto = data.foto ? `'${data.foto.replace(/'/g, "''")}'` : "NULL";
+    const fotoRecusada = Boolean(data.foto_recusada);
+    const safeMotivo = (data.foto_recusada_motivo || "").replace(/'/g, "''");
 
     const q = `
       INSERT INTO "Visita" (
         "id", "pacienteId", "pacienteNome", "prontuario", "alaNome", "leito",
         "visitanteNome", "tipoDocumento", "documentoNumero", "parentesco",
-        "dataHoraEntrada", "dataHoraSaida", "status", "observacoes", "recepcionista", "created_at"
+        "dataHoraEntrada", "dataHoraSaida", "status", "observacoes", "recepcionista",
+        "foto", "foto_recusada", "foto_recusada_motivo", "created_at"
       ) VALUES (
         '${id}', '${safePacienteId}', '${safePacienteNome}', '${safeProntuario}', '${safeAlaNome}', '${safeLeito}',
         '${safeVisitanteNome}', '${tipoDocumento}', '${safeDocNumero}', '${safeParentesco}',
-        '${safeEntrada}', NULL, 'Em Andamento', '${safeObs}', '${safeRecepcionista}', '${now}'
+        '${safeEntrada}', NULL, 'Em Andamento', '${safeObs}', '${safeRecepcionista}',
+        ${safeFoto}, ${fotoRecusada}, '${safeMotivo}', '${now}'
       );
     `;
     await executePostgres(q);
-    await logAuditoria("CADASTRAR_VISITA", id, { visitanteNome: data.visitanteNome, pacienteNome: data.pacienteNome, tipoDocumento, documentoNumero: data.documentoNumero });
+    await logAuditoria("CADASTRAR_VISITA", id, { visitanteNome: data.visitanteNome, pacienteNome: data.pacienteNome, tipoDocumento, documentoNumero: data.documentoNumero, foto_recusada: fotoRecusada });
     return { id, ...data, tipoDocumento, status: "Em Andamento", created_at: now };
   },
 
