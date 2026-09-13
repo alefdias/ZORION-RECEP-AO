@@ -21,7 +21,7 @@ import {
 } from "lucide-react";
 
 // Ícones dos Módulos do Sistema Hospitalar
-const IconRecepcao = ({ color }) => (
+const IconRecepcao = ({ color = "#f97316" }) => (
   <svg width="44" height="44" viewBox="0 0 24 24" fill="none">
     <path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2" stroke={color} strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" fill={color + "18"} />
     <circle cx="9" cy="7" r="4" stroke={color} strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" fill={color + "28"} />
@@ -32,12 +32,12 @@ const IconRecepcao = ({ color }) => (
 const ALL_MODULES = [
   {
     key: "recepcao",
-    label: "Recepção",
+    label: "Recepção Central",
     sub: "Admissão & Leitos",
-    color: "#0284c7", // Sky blue
-    glow: "rgba(2,132,199,0.35)",
-    border: "rgba(2,132,199,0.5)",
-    bg: "rgba(2,132,199,0.1)",
+    color: "#f97316", // Laranja padrão idêntico ao modelo Farmácia
+    glow: "rgba(249,115,22,0.35)",
+    border: "rgba(249,115,22,0.5)",
+    bg: "rgba(249,115,22,0.1)",
     Icon: IconRecepcao,
     isAvailableInThisApp: true
   }
@@ -506,13 +506,13 @@ export function WelcomeScreenRecepcao({ onEnter }) {
         >
           <div
             style={{
-              background: "#0f172a",
-              border: `1.5px solid ${selectedModule.border}`,
-              borderRadius: 24,
-              padding: 32,
+              background: "#0c1322",
+              border: "1px solid rgba(249, 115, 22, 0.28)",
+              borderRadius: 22,
+              padding: "30px 26px 26px",
               width: "100%",
-              maxWidth: 420,
-              boxShadow: `0 24px 60px ${selectedModule.glow}`,
+              maxWidth: 380,
+              boxShadow: "0 0 35px rgba(249, 115, 22, 0.14), 0 25px 60px rgba(0,0,0,0.8)",
               position: "relative",
               transition: "all 0.3s ease",
             }}
@@ -522,39 +522,42 @@ export function WelcomeScreenRecepcao({ onEnter }) {
               onClick={() => setSelectedModule(null)}
               style={{
                 position: "absolute",
-                top: 20,
-                right: 20,
+                top: 18,
+                right: 18,
                 background: "transparent",
                 border: "none",
-                color: "#64748b",
-                fontSize: 18,
+                color: "#475569",
                 cursor: "pointer",
                 padding: 4,
-              }}
-            >
-              <X className="w-5 h-5 text-slate-400 hover:text-white" />
-            </button>
-
-            {/* Cabeçalho do Modal */}
-            <div style={{ display: "flex", alignItems: "center", gap: 14, marginBottom: 24 }}>
-              <div style={{
-                width: 48,
-                height: 48,
-                borderRadius: 16,
-                background: selectedModule.bg,
-                border: `1px solid ${selectedModule.border}`,
                 display: "flex",
                 alignItems: "center",
                 justifyContent: "center"
+              }}
+            >
+              <X className="w-5 h-5 text-slate-500 hover:text-slate-300 transition-colors" />
+            </button>
+
+            {/* Cabeçalho do Modal */}
+            <div style={{ display: "flex", alignItems: "center", gap: 14, marginBottom: 22 }}>
+              <div style={{
+                width: 46,
+                height: 46,
+                borderRadius: 14,
+                background: "rgba(249, 115, 22, 0.08)",
+                border: "1.5px solid rgba(249, 115, 22, 0.45)",
+                display: "flex",
+                alignItems: "center",
+                justifyContent: "center",
+                flexShrink: 0
               }}>
-                <selectedModule.Icon color={selectedModule.color} />
+                <selectedModule.Icon color="#f97316" />
               </div>
               <div>
                 <h3 style={{ margin: 0, fontSize: 18, fontWeight: 700, color: "#f8fafc" }}>
-                  Módulo {selectedModule.label}
+                  {selectedModule.label}
                 </h3>
-                <span style={{ fontSize: 12, color: "#94a3b8" }}>
-                  Identifique-se para acessar o sistema
+                <span style={{ fontSize: 13, color: "#64748b" }}>
+                  Identifique-se para acessar
                 </span>
               </div>
             </div>
@@ -563,8 +566,8 @@ export function WelcomeScreenRecepcao({ onEnter }) {
             {!isFirstLogin ? (
               <form onSubmit={handleLoginSubmit} style={{ display: "flex", flexDirection: "column", gap: 16 }}>
                 <div>
-                  <label style={{ display: "block", fontSize: 12, fontWeight: 600, color: "#cbd5e1", marginBottom: 6 }}>
-                    Usuário ou Login
+                  <label style={{ display: "block", fontSize: 13, fontWeight: 500, color: "#cbd5e1", marginBottom: 7 }}>
+                    Usuário
                   </label>
                   <input
                     type="text"
@@ -572,24 +575,34 @@ export function WelcomeScreenRecepcao({ onEnter }) {
                     autoFocus
                     value={username}
                     onChange={e => setUsername(e.target.value)}
-                    placeholder="Digite seu usuário (Ex: admin)"
+                    placeholder="Seu usuário"
                     style={{
                       width: "100%",
-                      padding: "10px 14px",
-                      borderRadius: 12,
-                      background: "#1e293b",
-                      border: "1px solid #334155",
-                      color: "#fff",
+                      padding: "12px 14px",
+                      borderRadius: 10,
+                      background: "#162032",
+                      border: "1px solid #24344d",
+                      color: "#f8fafc",
                       fontSize: 14,
-                      outline: "none"
+                      outline: "none",
+                      boxSizing: "border-box",
+                      transition: "border-color 0.2s, box-shadow 0.2s"
+                    }}
+                    onFocus={e => {
+                      e.target.style.borderColor = "#f97316";
+                      e.target.style.boxShadow = "0 0 0 1px rgba(249, 115, 22, 0.35)";
+                    }}
+                    onBlur={e => {
+                      e.target.style.borderColor = "#24344d";
+                      e.target.style.boxShadow = "none";
                     }}
                   />
                 </div>
 
                 <div>
-                  <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 6 }}>
-                    <label style={{ fontSize: 12, fontWeight: 600, color: "#cbd5e1" }}>
-                      Senha de Acesso
+                  <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 7 }}>
+                    <label style={{ fontSize: 13, fontWeight: 500, color: "#cbd5e1" }}>
+                      Senha
                     </label>
                     <button
                       type="button"
@@ -597,7 +610,7 @@ export function WelcomeScreenRecepcao({ onEnter }) {
                       style={{
                         background: "none",
                         border: "none",
-                        color: "#38bdf8",
+                        color: "#64748b",
                         fontSize: 11,
                         cursor: "pointer",
                         display: "flex",
@@ -617,13 +630,23 @@ export function WelcomeScreenRecepcao({ onEnter }) {
                     placeholder="••••••••"
                     style={{
                       width: "100%",
-                      padding: "10px 14px",
-                      borderRadius: 12,
-                      background: "#1e293b",
-                      border: "1px solid #334155",
-                      color: "#fff",
+                      padding: "12px 14px",
+                      borderRadius: 10,
+                      background: "#162032",
+                      border: "1px solid #24344d",
+                      color: "#f8fafc",
                       fontSize: 14,
-                      outline: "none"
+                      outline: "none",
+                      boxSizing: "border-box",
+                      transition: "border-color 0.2s, box-shadow 0.2s"
+                    }}
+                    onFocus={e => {
+                      e.target.style.borderColor = "#f97316";
+                      e.target.style.boxShadow = "0 0 0 1px rgba(249, 115, 22, 0.35)";
+                    }}
+                    onBlur={e => {
+                      e.target.style.borderColor = "#24344d";
+                      e.target.style.boxShadow = "none";
                     }}
                   />
                 </div>
@@ -631,31 +654,33 @@ export function WelcomeScreenRecepcao({ onEnter }) {
                 <button
                   type="submit"
                   style={{
-                    marginTop: 8,
-                    padding: "12px",
-                    borderRadius: 12,
-                    background: "linear-gradient(to right, #0284c7, #0ea5e9)",
-                    color: "#fff",
+                    marginTop: 6,
+                    padding: "13px",
+                    borderRadius: 11,
+                    background: "#f97316",
+                    color: "#ffffff",
                     border: "none",
                     fontWeight: 700,
-                    fontSize: 14,
+                    fontSize: 15,
                     cursor: "pointer",
-                    boxShadow: "0 4px 14px rgba(2,132,199,0.4)",
+                    boxShadow: "0 4px 18px rgba(249, 115, 22, 0.4)",
                     transition: "all 0.2s ease"
                   }}
+                  onMouseEnter={e => e.currentTarget.style.background = "#ea580c"}
+                  onMouseLeave={e => e.currentTarget.style.background = "#f97316"}
                 >
-                  Entrar no Módulo Recepção
+                  Entrar no Módulo
                 </button>
               </form>
             ) : (
               /* FORMULÁRIO DE PRIMEIRO ACESSO */
               <form onSubmit={handlePasswordChange} style={{ display: "flex", flexDirection: "column", gap: 14 }}>
-                <div style={{ background: "rgba(2,132,199,0.12)", border: "1px solid rgba(2,132,199,0.3)", padding: 12, borderRadius: 12, fontSize: 12, color: "#38bdf8" }}>
+                <div style={{ background: "rgba(249, 115, 22, 0.1)", border: "1px solid rgba(249, 115, 22, 0.3)", padding: 12, borderRadius: 12, fontSize: 12, color: "#fb923c" }}>
                   <strong>Primeiro Acesso Detectado:</strong> Por segurança, crie uma nova senha de acesso pessoal.
                 </div>
 
                 <div>
-                  <label style={{ display: "block", fontSize: 12, fontWeight: 600, color: "#cbd5e1", marginBottom: 6 }}>
+                  <label style={{ display: "block", fontSize: 13, fontWeight: 500, color: "#cbd5e1", marginBottom: 7 }}>
                     Nova Senha
                   </label>
                   <input
@@ -666,19 +691,20 @@ export function WelcomeScreenRecepcao({ onEnter }) {
                     placeholder="Mínimo 3 caracteres"
                     style={{
                       width: "100%",
-                      padding: "10px 14px",
-                      borderRadius: 12,
-                      background: "#1e293b",
-                      border: "1px solid #334155",
-                      color: "#fff",
+                      padding: "12px 14px",
+                      borderRadius: 10,
+                      background: "#162032",
+                      border: "1px solid #24344d",
+                      color: "#f8fafc",
                       fontSize: 14,
-                      outline: "none"
+                      outline: "none",
+                      boxSizing: "border-box"
                     }}
                   />
                 </div>
 
                 <div>
-                  <label style={{ display: "block", fontSize: 12, fontWeight: 600, color: "#cbd5e1", marginBottom: 6 }}>
+                  <label style={{ display: "block", fontSize: 13, fontWeight: 500, color: "#cbd5e1", marginBottom: 7 }}>
                     Confirmar Nova Senha
                   </label>
                   <input
@@ -689,13 +715,14 @@ export function WelcomeScreenRecepcao({ onEnter }) {
                     placeholder="Repita a nova senha"
                     style={{
                       width: "100%",
-                      padding: "10px 14px",
-                      borderRadius: 12,
-                      background: "#1e293b",
-                      border: "1px solid #334155",
-                      color: "#fff",
+                      padding: "12px 14px",
+                      borderRadius: 10,
+                      background: "#162032",
+                      border: "1px solid #24344d",
+                      color: "#f8fafc",
                       fontSize: 14,
-                      outline: "none"
+                      outline: "none",
+                      boxSizing: "border-box"
                     }}
                   />
                 </div>
@@ -703,17 +730,19 @@ export function WelcomeScreenRecepcao({ onEnter }) {
                 <button
                   type="submit"
                   style={{
-                    marginTop: 8,
-                    padding: "12px",
-                    borderRadius: 12,
-                    background: "linear-gradient(to right, #0284c7, #0ea5e9)",
-                    color: "#fff",
+                    marginTop: 6,
+                    padding: "13px",
+                    borderRadius: 11,
+                    background: "#f97316",
+                    color: "#ffffff",
                     border: "none",
                     fontWeight: 700,
-                    fontSize: 14,
+                    fontSize: 15,
                     cursor: "pointer",
-                    boxShadow: "0 4px 14px rgba(2,132,199,0.4)"
+                    boxShadow: "0 4px 18px rgba(249, 115, 22, 0.4)"
                   }}
+                  onMouseEnter={e => e.currentTarget.style.background = "#ea580c"}
+                  onMouseLeave={e => e.currentTarget.style.background = "#f97316"}
                 >
                   Salvar Nova Senha e Acessar
                 </button>

@@ -68,7 +68,7 @@ export default function AuthDialog({ open, onSuccess }) {
                         <Input
                             id="usuario"
                             type="text"
-                            placeholder="Digite seu usuário"
+                            placeholder="Seu usuário"
                             value={usuario}
                             onChange={(e) => setUsuario(e.target.value)}
                             required
@@ -80,7 +80,7 @@ export default function AuthDialog({ open, onSuccess }) {
                         <Input
                             id="senha"
                             type="password"
-                            placeholder="Digite sua senha"
+                            placeholder="••••••••"
                             value={senha}
                             onChange={(e) => setSenha(e.target.value)}
                             required
@@ -88,10 +88,10 @@ export default function AuthDialog({ open, onSuccess }) {
                     </div>
                     <Button
                         type="submit"
-                        className="w-full bg-blue-600 hover:bg-blue-700"
+                        className="w-full bg-orange-500 hover:bg-orange-600 text-white font-bold"
                         disabled={loading}
                     >
-                        {loading ? "Verificando..." : "Autenticar"}
+                        {loading ? "Verificando..." : "Entrar no Módulo"}
                     </Button>
                 </form>
             </DialogContent>
