@@ -278,7 +278,7 @@ export function PatientModal({ open, onOpenChange, patient = null, alas = [], al
                   <SelectContent>
                     {alas.map(ala => (
                       <SelectItem key={ala.id} value={ala.id}>
-                        {ala.nome} {ala.leitos ? `(${ala.leitos} leitos)` : ""}
+                        {ala.nome} (Leitos Ilimitados)
                       </SelectItem>
                     ))}
                   </SelectContent>

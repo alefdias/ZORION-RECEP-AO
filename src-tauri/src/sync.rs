@@ -151,6 +151,24 @@ pub async fn execute_postgres(
 }
 
 #[tauri::command]
+pub async fn execute_postgres_raw(
+    ip: String,
+    db_name: String,
+    password: String,
+    query: String,
+) -> Result<u64, String> {
+    let conn_str = format!("host={} user=postgres password={} dbname={} connect_timeout=3", ip, password, db_name);
+    
+    let result = tauri::async_runtime::spawn_blocking(move || {
+        let mut client = Client::connect(&conn_str, NoTls).map_err(|e| format!("Conexão falhou: {}", e))?;
+        client.batch_execute(&query).map_err(|e| format!("Falha ao executar lote SQL: {}", e))?;
+        Ok(1)
+    }).await.map_err(|e| e.to_string())?;
+
+    result
+}
+
+#[tauri::command]
 pub async fn start_db_listener(
     app: tauri::AppHandle,
     ip: String,

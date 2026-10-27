@@ -18,7 +18,7 @@ import { ConfiguracoesRecepcaoModal } from "@/components/ConfiguracoesRecepcaoMo
 import { RecepcaoDashboard } from "@/pages/RecepcaoDashboard";
 import { PacientesList } from "@/pages/PacientesList";
 import { VisitasManager } from "@/pages/VisitasManager";
-import { PacienteService, AlaService, VisitaService, EstatisticasService, initDbListener } from "@/api/db";
+import { PacienteService, AlaService, VisitaService, EstatisticasService, initDbListener, ensureRecepcaoTables } from "@/api/db";
 import { WelcomeScreenRecepcao } from "@/components/WelcomeScreenRecepcao";
 import { ZorionChatWidget } from "@/components/chat/ZorionChatWidget";
 import { toast } from "sonner";
@@ -50,6 +50,7 @@ export function App() {
 
     const setupListeners = async () => {
       try {
+        await ensureRecepcaoTables();
         await initDbListener();
         unlistenUpdate = await listen("db_update", () => {
           queryClient.invalidateQueries();
@@ -75,7 +76,7 @@ export function App() {
     queryKey: ["recepcao_pacientes"],
     queryFn: () => PacienteService.list({ status: "all" }),
     enabled: Boolean(currentUser),
-    refetchInterval: 1500, // Complemento de segurança para sincronia instantânea
+    refetchInterval: 5000, // Complemento de segurança para sincronia
   });
 
   const { data: alas = [], refetch: refetchAlas } = useQuery({
@@ -88,14 +89,14 @@ export function App() {
     queryKey: ["recepcao_metricas"],
     queryFn: () => EstatisticasService.getDashboardMetrics(),
     enabled: Boolean(currentUser),
-    refetchInterval: 1500,
+    refetchInterval: 5000,
   });
 
   const { data: visitas = [], refetch: refetchVisitas } = useQuery({
     queryKey: ["recepcao_visitas"],
     queryFn: () => VisitaService.list(),
     enabled: Boolean(currentUser),
-    refetchInterval: 1500,
+    refetchInterval: 5000,
   });
 
   const handleRefreshAll = () => {

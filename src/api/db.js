@@ -40,163 +40,142 @@ export async function executePostgres(query) {
   return await invoke("execute_postgres", { ip, dbName, password, query });
 }
 
-// Ensure essential tables exist
-export async function ensureRecepcaoTables() {
-  const q = `
-    CREATE TABLE IF NOT EXISTS "Paciente" (
-      "id" TEXT PRIMARY KEY,
-      "nome" TEXT NOT NULL,
-      "prontuario" TEXT,
-      "idade" INTEGER,
-      "alaId" TEXT,
-      "alaNome" TEXT,
-      "leito" TEXT,
-      "status" TEXT DEFAULT 'Ativo',
-      "observacoes" TEXT,
-      "dataAlta" TEXT,
-      "created_at" TEXT,
-      "deleted_at" TEXT
-    );
-    ALTER TABLE "Paciente" ADD COLUMN IF NOT EXISTS "idade" INTEGER;
-    ALTER TABLE "Paciente" ADD COLUMN IF NOT EXISTS "alaId" TEXT;
-    ALTER TABLE "Paciente" ADD COLUMN IF NOT EXISTS "alaNome" TEXT;
-    ALTER TABLE "Paciente" ADD COLUMN IF NOT EXISTS "leito" TEXT;
-    ALTER TABLE "Paciente" ADD COLUMN IF NOT EXISTS "status" TEXT DEFAULT 'Ativo';
-    ALTER TABLE "Paciente" ADD COLUMN IF NOT EXISTS "observacoes" TEXT;
-    ALTER TABLE "Paciente" ADD COLUMN IF NOT EXISTS "dataAlta" TEXT;
-    ALTER TABLE "Paciente" ADD COLUMN IF NOT EXISTS "foto" TEXT;
-    ALTER TABLE "Paciente" ADD COLUMN IF NOT EXISTS "created_at" TEXT;
-    ALTER TABLE "Paciente" ADD COLUMN IF NOT EXISTS "deleted_at" TEXT;
-
-    CREATE TABLE IF NOT EXISTS "Ala" (
-      "id" TEXT PRIMARY KEY,
-      "nome" TEXT NOT NULL,
-      "descricao" TEXT,
-      "leitos" INTEGER DEFAULT 10,
-      "created_at" TEXT,
-      "deleted_at" TEXT
-    );
-    ALTER TABLE "Ala" ADD COLUMN IF NOT EXISTS "leitos" INTEGER DEFAULT 10;
-
-    -- Configuração exata de leitos por Ala Hospitalar
-    -- N1: 39 leitos
-    UPDATE "Ala" SET "leitos" = 39 WHERE LOWER(TRIM("nome")) IN ('n1', 'ala n1', 'ala-n1');
-    INSERT INTO "Ala" ("id", "nome", "descricao", "leitos", "created_at")
-    SELECT 'ala-n1-uuid', 'N1', 'Ala N1 (39 leitos)', 39, NOW()
-    WHERE NOT EXISTS (SELECT 1 FROM "Ala" WHERE LOWER(TRIM("nome")) IN ('n1', 'ala n1', 'ala-n1') AND deleted_at IS NULL);
-
-    -- N2: 39 leitos
-    UPDATE "Ala" SET "leitos" = 39 WHERE LOWER(TRIM("nome")) IN ('n2', 'ala n2', 'ala-n2');
-    INSERT INTO "Ala" ("id", "nome", "descricao", "leitos", "created_at")
-    SELECT 'ala-n2-uuid', 'N2', 'Ala N2 (39 leitos)', 39, NOW()
-    WHERE NOT EXISTS (SELECT 1 FROM "Ala" WHERE LOWER(TRIM("nome")) IN ('n2', 'ala n2', 'ala-n2') AND deleted_at IS NULL);
-
-    -- R1 M: 10 leitos
-    UPDATE "Ala" SET "leitos" = 10 WHERE LOWER(TRIM("nome")) IN ('r1 m', 'r1-m', 'r1m', 'r1 masculino', 'ala r1 m', 'ala r1 masculino');
-    INSERT INTO "Ala" ("id", "nome", "descricao", "leitos", "created_at")
-    SELECT 'ala-r1m-uuid', 'R1 M', 'Ala R1 Masculino (10 leitos)', 10, NOW()
-    WHERE NOT EXISTS (SELECT 1 FROM "Ala" WHERE LOWER(TRIM("nome")) IN ('r1 m', 'r1-m', 'r1m', 'r1 masculino', 'ala r1 m', 'ala r1 masculino') AND deleted_at IS NULL);
-
-    -- R1 F: 15 leitos
-    UPDATE "Ala" SET "leitos" = 15 WHERE LOWER(TRIM("nome")) IN ('r1 f', 'r1-f', 'r1f', 'r1 feminino', 'ala r1 f', 'ala r1 feminino');
-    INSERT INTO "Ala" ("id", "nome", "descricao", "leitos", "created_at")
-    SELECT 'ala-r1f-uuid', 'R1 F', 'Ala R1 Feminino (15 leitos)', 15, NOW()
-    WHERE NOT EXISTS (SELECT 1 FROM "Ala" WHERE LOWER(TRIM("nome")) IN ('r1 f', 'r1-f', 'r1f', 'r1 feminino', 'ala r1 f', 'ala r1 feminino') AND deleted_at IS NULL);
-
-    -- UCP: 10 leitos
-    UPDATE "Ala" SET "leitos" = 10 WHERE LOWER(TRIM("nome")) IN ('ucp', 'ala ucp');
-    INSERT INTO "Ala" ("id", "nome", "descricao", "leitos", "created_at")
-    SELECT 'ala-ucp-uuid', 'UCP', 'Unidade de Cuidados Prolongados (10 leitos)', 10, NOW()
-    WHERE NOT EXISTS (SELECT 1 FROM "Ala" WHERE LOWER(TRIM("nome")) IN ('ucp', 'ala ucp') AND deleted_at IS NULL);
-
-    -- CL1: 10 leitos
-    UPDATE "Ala" SET "leitos" = 10 WHERE LOWER(TRIM("nome")) IN ('cl1', 'cl 1', 'ala cl1', 'ala cl 1', 'clinica 1');
-    INSERT INTO "Ala" ("id", "nome", "descricao", "leitos", "created_at")
-    SELECT 'ala-cl1-uuid', 'CL1', 'Ala Clínica 1 (10 leitos)', 10, NOW()
-    WHERE NOT EXISTS (SELECT 1 FROM "Ala" WHERE LOWER(TRIM("nome")) IN ('cl1', 'cl 1', 'ala cl1', 'ala cl 1', 'clinica 1') AND deleted_at IS NULL);
-
-    -- CL2: 10 leitos
-    UPDATE "Ala" SET "leitos" = 10 WHERE LOWER(TRIM("nome")) IN ('cl2', 'cl 2', 'ala cl2', 'ala cl 2', 'clinica 2');
-    INSERT INTO "Ala" ("id", "nome", "descricao", "leitos", "created_at")
-    SELECT 'ala-cl2-uuid', 'CL2', 'Ala Clínica 2 (10 leitos)', 10, NOW()
-    WHERE NOT EXISTS (SELECT 1 FROM "Ala" WHERE LOWER(TRIM("nome")) IN ('cl2', 'cl 2', 'ala cl2', 'ala cl 2', 'clinica 2') AND deleted_at IS NULL);
-
-    -- CASA MENINOS: 3 leitos
-    UPDATE "Ala" SET "leitos" = 3 WHERE LOWER(TRIM("nome")) IN ('casa meninos', 'casa dos meninos', 'ala casa meninos', 'ala casa dos meninos');
-    INSERT INTO "Ala" ("id", "nome", "descricao", "leitos", "created_at")
-    SELECT 'ala-casameninos-uuid', 'Casa Meninos', 'Casa dos Meninos (3 leitos)', 3, NOW()
-    WHERE NOT EXISTS (SELECT 1 FROM "Ala" WHERE LOWER(TRIM("nome")) IN ('casa meninos', 'casa dos meninos', 'ala casa meninos', 'ala casa dos meninos') AND deleted_at IS NULL);
-
-    CREATE TABLE IF NOT EXISTS "Auditoria" (
-      "id" TEXT PRIMARY KEY,
-      "acao" TEXT NOT NULL,
-      "entidade" TEXT NOT NULL,
-      "entidade_id" TEXT,
-      "detalhes" TEXT,
-      "usuario" TEXT DEFAULT 'Recepção',
-      "data_hora" TEXT,
-      "created_at" TEXT
-    );
-
-    CREATE TABLE IF NOT EXISTS "Usuario" (
-      "id" TEXT PRIMARY KEY,
-      "nome" TEXT,
-      "login" TEXT UNIQUE,
-      "senha" TEXT,
-      "coren" TEXT,
-      "crf" TEXT,
-      "perfil" TEXT,
-      "primeiro_acesso" BOOLEAN DEFAULT true,
-      "created_at" TEXT,
-      "deleted_at" TEXT
-    );
-    ALTER TABLE "Usuario" ADD COLUMN IF NOT EXISTS "coren" TEXT;
-    ALTER TABLE "Usuario" ADD COLUMN IF NOT EXISTS "crf" TEXT;
-    ALTER TABLE "Usuario" ADD COLUMN IF NOT EXISTS "primeiro_acesso" BOOLEAN DEFAULT true;
-    ALTER TABLE "Usuario" ADD COLUMN IF NOT EXISTS "email" TEXT;
-    ALTER TABLE "Usuario" ADD COLUMN IF NOT EXISTS "telefone" TEXT;
-    INSERT INTO "Usuario" ("id", "nome", "login", "senha", "perfil", "primeiro_acesso") 
-    VALUES ('user-admin-uuid', 'Administrador RT', 'admin', 'admin123', 'admin', false)
-    ON CONFLICT DO NOTHING;
-
-    CREATE TABLE IF NOT EXISTS "Visita" (
-      "id" TEXT PRIMARY KEY,
-      "pacienteId" TEXT NOT NULL,
-      "pacienteNome" TEXT NOT NULL,
-      "prontuario" TEXT,
-      "alaNome" TEXT,
-      "leito" TEXT,
-      "visitanteNome" TEXT NOT NULL,
-      "tipoDocumento" TEXT NOT NULL DEFAULT 'RG',
-      "documentoNumero" TEXT NOT NULL,
-      "parentesco" TEXT,
-      "dataHoraEntrada" TEXT NOT NULL,
-      "dataHoraSaida" TEXT,
-      "status" TEXT DEFAULT 'Em Andamento',
-      "observacoes" TEXT,
-      "recepcionista" TEXT,
-      "created_at" TEXT,
-      "deleted_at" TEXT
-    );
-    ALTER TABLE "Visita" ADD COLUMN IF NOT EXISTS "tipoDocumento" TEXT DEFAULT 'RG';
-    ALTER TABLE "Visita" ADD COLUMN IF NOT EXISTS "documentoNumero" TEXT;
-    ALTER TABLE "Visita" ADD COLUMN IF NOT EXISTS "parentesco" TEXT;
-    ALTER TABLE "Visita" ADD COLUMN IF NOT EXISTS "dataHoraEntrada" TEXT;
-    ALTER TABLE "Visita" ADD COLUMN IF NOT EXISTS "dataHoraSaida" TEXT;
-    ALTER TABLE "Visita" ADD COLUMN IF NOT EXISTS "status" TEXT DEFAULT 'Em Andamento';
-    ALTER TABLE "Visita" ADD COLUMN IF NOT EXISTS "observacoes" TEXT;
-    ALTER TABLE "Visita" ADD COLUMN IF NOT EXISTS "recepcionista" TEXT;
-    ALTER TABLE "Visita" ADD COLUMN IF NOT EXISTS "foto" TEXT;
-    ALTER TABLE "Visita" ADD COLUMN IF NOT EXISTS "foto_recusada" BOOLEAN DEFAULT false;
-    ALTER TABLE "Visita" ADD COLUMN IF NOT EXISTS "foto_recusada_motivo" TEXT;
-    ALTER TABLE "Visita" ADD COLUMN IF NOT EXISTS "created_at" TEXT;
-    ALTER TABLE "Visita" ADD COLUMN IF NOT EXISTS "deleted_at" TEXT;
-  `;
-  try {
-    await executePostgres(q);
-  } catch (err) {
-    console.warn("Aviso ao assegurar tabelas de recepção:", err);
+export async function executePostgresRaw(query) {
+  if (!isTauriAvailable()) {
+    console.warn("Tauri não disponível, simulando execute raw em modo web:", query);
+    return 1;
   }
+  const { ip, dbName, password } = getPgConfig();
+  return await invoke("execute_postgres_raw", { ip, dbName, password, query });
+}
+
+let isTablesEnsured = false;
+let ensuringTablesPromise = null;
+
+// Ensure essential tables exist (executado uma única vez na inicialização sem disparar NOTIFY)
+export async function ensureRecepcaoTables() {
+  if (isTablesEnsured) return;
+  if (ensuringTablesPromise) return ensuringTablesPromise;
+
+  ensuringTablesPromise = (async () => {
+    const q = `
+      CREATE TABLE IF NOT EXISTS "Paciente" (
+        "id" TEXT PRIMARY KEY,
+        "nome" TEXT NOT NULL,
+        "prontuario" TEXT,
+        "idade" INTEGER,
+        "alaId" TEXT,
+        "alaNome" TEXT,
+        "leito" TEXT,
+        "status" TEXT DEFAULT 'Ativo',
+        "observacoes" TEXT,
+        "dataAlta" TEXT,
+        "foto" TEXT,
+        "created_at" TEXT,
+        "deleted_at" TEXT
+      );
+      ALTER TABLE "Paciente" ADD COLUMN IF NOT EXISTS "idade" INTEGER;
+      ALTER TABLE "Paciente" ADD COLUMN IF NOT EXISTS "alaId" TEXT;
+      ALTER TABLE "Paciente" ADD COLUMN IF NOT EXISTS "alaNome" TEXT;
+      ALTER TABLE "Paciente" ADD COLUMN IF NOT EXISTS "leito" TEXT;
+      ALTER TABLE "Paciente" ADD COLUMN IF NOT EXISTS "status" TEXT DEFAULT 'Ativo';
+      ALTER TABLE "Paciente" ADD COLUMN IF NOT EXISTS "observacoes" TEXT;
+      ALTER TABLE "Paciente" ADD COLUMN IF NOT EXISTS "dataAlta" TEXT;
+      ALTER TABLE "Paciente" ADD COLUMN IF NOT EXISTS "foto" TEXT;
+      ALTER TABLE "Paciente" ADD COLUMN IF NOT EXISTS "created_at" TEXT;
+      ALTER TABLE "Paciente" ADD COLUMN IF NOT EXISTS "deleted_at" TEXT;
+
+      CREATE TABLE IF NOT EXISTS "Ala" (
+        "id" TEXT PRIMARY KEY,
+        "nome" TEXT NOT NULL,
+        "descricao" TEXT,
+        "leitos" INTEGER DEFAULT 9999,
+        "created_at" TEXT,
+        "deleted_at" TEXT
+      );
+      ALTER TABLE "Ala" ADD COLUMN IF NOT EXISTS "leitos" INTEGER DEFAULT 9999;
+      -- Modo leitos infinitos / ilimitados para todas as alas
+      UPDATE "Ala" SET "leitos" = 9999 WHERE "leitos" IS NULL OR "leitos" < 9999;
+
+      CREATE TABLE IF NOT EXISTS "Auditoria" (
+        "id" TEXT PRIMARY KEY,
+        "acao" TEXT NOT NULL,
+        "entidade" TEXT NOT NULL,
+        "entidade_id" TEXT,
+        "detalhes" TEXT,
+        "usuario" TEXT DEFAULT 'Recepção',
+        "data_hora" TEXT,
+        "created_at" TEXT
+      );
+
+      CREATE TABLE IF NOT EXISTS "Usuario" (
+        "id" TEXT PRIMARY KEY,
+        "nome" TEXT,
+        "login" TEXT UNIQUE,
+        "senha" TEXT,
+        "coren" TEXT,
+        "crf" TEXT,
+        "perfil" TEXT,
+        "primeiro_acesso" BOOLEAN DEFAULT true,
+        "created_at" TEXT,
+        "deleted_at" TEXT
+      );
+      ALTER TABLE "Usuario" ADD COLUMN IF NOT EXISTS "coren" TEXT;
+      ALTER TABLE "Usuario" ADD COLUMN IF NOT EXISTS "crf" TEXT;
+      ALTER TABLE "Usuario" ADD COLUMN IF NOT EXISTS "primeiro_acesso" BOOLEAN DEFAULT true;
+      ALTER TABLE "Usuario" ADD COLUMN IF NOT EXISTS "email" TEXT;
+      ALTER TABLE "Usuario" ADD COLUMN IF NOT EXISTS "telefone" TEXT;
+      INSERT INTO "Usuario" ("id", "nome", "login", "senha", "perfil", "primeiro_acesso") 
+      VALUES ('user-admin-uuid', 'Administrador RT', 'admin', 'admin123', 'admin', false)
+      ON CONFLICT DO NOTHING;
+
+      CREATE TABLE IF NOT EXISTS "Visita" (
+        "id" TEXT PRIMARY KEY,
+        "pacienteId" TEXT NOT NULL,
+        "pacienteNome" TEXT NOT NULL,
+        "prontuario" TEXT,
+        "alaNome" TEXT,
+        "leito" TEXT,
+        "visitanteNome" TEXT NOT NULL,
+        "tipoDocumento" TEXT NOT NULL DEFAULT 'RG',
+        "documentoNumero" TEXT NOT NULL,
+        "parentesco" TEXT,
+        "dataHoraEntrada" TEXT NOT NULL,
+        "dataHoraSaida" TEXT,
+        "status" TEXT DEFAULT 'Em Andamento',
+        "observacoes" TEXT,
+        "recepcionista" TEXT,
+        "foto" TEXT,
+        "foto_recusada" BOOLEAN DEFAULT false,
+        "foto_recusada_motivo" TEXT,
+        "created_at" TEXT,
+        "deleted_at" TEXT
+      );
+      ALTER TABLE "Visita" ADD COLUMN IF NOT EXISTS "tipoDocumento" TEXT DEFAULT 'RG';
+      ALTER TABLE "Visita" ADD COLUMN IF NOT EXISTS "documentoNumero" TEXT;
+      ALTER TABLE "Visita" ADD COLUMN IF NOT EXISTS "parentesco" TEXT;
+      ALTER TABLE "Visita" ADD COLUMN IF NOT EXISTS "dataHoraEntrada" TEXT;
+      ALTER TABLE "Visita" ADD COLUMN IF NOT EXISTS "dataHoraSaida" TEXT;
+      ALTER TABLE "Visita" ADD COLUMN IF NOT EXISTS "status" TEXT DEFAULT 'Em Andamento';
+      ALTER TABLE "Visita" ADD COLUMN IF NOT EXISTS "observacoes" TEXT;
+      ALTER TABLE "Visita" ADD COLUMN IF NOT EXISTS "recepcionista" TEXT;
+      ALTER TABLE "Visita" ADD COLUMN IF NOT EXISTS "foto" TEXT;
+      ALTER TABLE "Visita" ADD COLUMN IF NOT EXISTS "foto_recusada" BOOLEAN DEFAULT false;
+      ALTER TABLE "Visita" ADD COLUMN IF NOT EXISTS "foto_recusada_motivo" TEXT;
+      ALTER TABLE "Visita" ADD COLUMN IF NOT EXISTS "created_at" TEXT;
+      ALTER TABLE "Visita" ADD COLUMN IF NOT EXISTS "deleted_at" TEXT;
+    `;
+    try {
+      await executePostgresRaw(q);
+      isTablesEnsured = true;
+    } catch (err) {
+      console.warn("Aviso ao assegurar tabelas de recepção:", err);
+    } finally {
+      ensuringTablesPromise = null;
+    }
+  })();
+
+  return ensuringTablesPromise;
 }
 
 // Log auditoria
@@ -213,42 +192,14 @@ async function logAuditoria(acao, entidadeId, detalhes) {
   }
 }
 
-// Configurações e capacidades oficiais de leitos das alas
-export const ALA_CONFIG_LEITOS = {
-  "n1": 39, "ala n1": 39, "ala-n1": 39,
-  "n2": 39, "ala n2": 39, "ala-n2": 39,
-  "r1 m": 10, "r1-m": 10, "r1m": 10, "r1 masculino": 10, "ala r1 m": 10, "ala r1 masculino": 10,
-  "r1 f": 15, "r1-f": 15, "r1f": 15, "r1 feminino": 15, "ala r1 f": 15, "ala r1 feminino": 15,
-  "ucp": 10, "ala ucp": 10,
-  "cl1": 10, "cl 1": 10, "ala cl1": 10, "ala cl 1": 10, "clinica 1": 10,
-  "cl2": 10, "cl 2": 10, "ala cl2": 10, "ala cl 2": 10, "clinica 2": 10,
-  "casa meninos": 3, "casa dos meninos": 3, "ala casa meninos": 3, "ala casa dos meninos": 3
-};
-
+// Capacidade de Leitos: Modo Ilimitado / Infinito a pedido na Recepção
 export function getAlaCapacity(ala) {
-  if (!ala) return 10;
-  const dbLeitos = Number(ala.leitos);
-  if (dbLeitos && !isNaN(dbLeitos) && dbLeitos > 0) return dbLeitos;
-
-  const norm = String(ala.nome || "").trim().toLowerCase();
-  if (ALA_CONFIG_LEITOS[norm]) return ALA_CONFIG_LEITOS[norm];
-
-  if (norm.includes("n1")) return 39;
-  if (norm.includes("n2")) return 39;
-  if (norm.includes("r1") && (norm.includes("m") || norm.includes("masc"))) return 10;
-  if (norm.includes("r1") && (norm.includes("f") || norm.includes("fem"))) return 15;
-  if (norm.includes("ucp")) return 10;
-  if (norm.includes("cl1") || norm.includes("cl 1")) return 10;
-  if (norm.includes("cl2") || norm.includes("cl 2")) return 10;
-  if (norm.includes("menino")) return 3;
-
-  return Number(ala.totalLeitos || ala.capacidade || 10) || 10;
+  return 9999;
 }
 
 // Operações de Pacientes
 export const PacienteService = {
   async list({ status = "all", alaId = "all", search = "" } = {}) {
-    await ensureRecepcaoTables();
     let q = `SELECT * FROM "Paciente" WHERE deleted_at IS NULL`;
     
     if (status === "ativo") {
@@ -395,7 +346,6 @@ export const PacienteService = {
 // Operações de Alas
 export const AlaService = {
   async list() {
-    await ensureRecepcaoTables();
     const q = `SELECT * FROM "Ala" WHERE deleted_at IS NULL ORDER BY "nome" ASC`;
     return await queryPostgres(q);
   }
@@ -404,7 +354,6 @@ export const AlaService = {
 // Estatísticas da Recepção
 export const EstatisticasService = {
   async getDashboardMetrics() {
-    await ensureRecepcaoTables();
     try {
       // Todos os pacientes usando SELECT * para evitar erro de colunas inexistentes
       const pacientes = await queryPostgres(`SELECT * FROM "Paciente" WHERE deleted_at IS NULL`);
@@ -427,7 +376,7 @@ export const EstatisticasService = {
         return p.created_at.startsWith(today) || p.created_at.includes(todayBR);
       });
 
-      // Ocupação por ala
+      // Ocupação por ala - Modo Leitos Ilimitados na Recepção
       const ocupacaoPorAla = alas.map(ala => {
         const internadosNestaAla = ativos.filter(p => {
           const pAlaId = String(p.alaId || p.ala_id || "");
@@ -436,16 +385,14 @@ export const EstatisticasService = {
           const aId = String(ala.id || "");
           return (pAlaId && pAlaId === aId) || (pAlaNome && pAlaNome === aNome);
         });
-        const capacidade = getAlaCapacity(ala);
         const ocupados = internadosNestaAla.length;
-        const percentual = capacidade > 0 ? Math.min(100, Math.round((ocupados / capacidade) * 100)) : 0;
         return {
           alaId: ala.id,
           alaNome: ala.nome,
-          totalLeitos: capacidade,
+          totalLeitos: "Ilimitado",
           ocupados,
-          disponiveis: Math.max(0, capacidade - ocupados),
-          percentual,
+          disponiveis: "Livre",
+          percentual: 0,
           pacientes: internadosNestaAla
         };
       });
@@ -478,7 +425,6 @@ export async function initDbListener() {
 // Operações de Usuários (Login e Autenticação)
 export const UsuarioService = {
   async list() {
-    await ensureRecepcaoTables();
     try {
       const q = `SELECT "id", "nome", "login", "senha", "coren", "crf", "perfil", "primeiro_acesso" FROM "Usuario" WHERE deleted_at IS NULL ORDER BY nome ASC`;
       return await queryPostgres(q);
@@ -489,7 +435,6 @@ export const UsuarioService = {
   },
 
   async get(id) {
-    await ensureRecepcaoTables();
     try {
       const q = `SELECT * FROM "Usuario" WHERE "id" = '${id.replace(/'/g, "''")}' LIMIT 1;`;
       const res = await queryPostgres(q);
@@ -506,7 +451,6 @@ export const UsuarioService = {
   },
 
   async updateProfile(id, { nome, email, telefone, senha = null }) {
-    await ensureRecepcaoTables();
     let sets = [];
     if (nome) sets.push(`"nome" = '${nome.replace(/'/g, "''")}'`);
     if (email !== undefined) sets.push(`"email" = '${(email || '').replace(/'/g, "''")}'`);
@@ -524,7 +468,6 @@ export const UsuarioService = {
 // Operações de Visitas
 export const VisitaService = {
   async list({ status = "all", pacienteId = null, search = "" } = {}) {
-    await ensureRecepcaoTables();
     let q = `SELECT * FROM "Visita" WHERE deleted_at IS NULL`;
 
     if (pacienteId) {

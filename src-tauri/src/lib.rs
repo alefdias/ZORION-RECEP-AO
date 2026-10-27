@@ -18,6 +18,7 @@ pub fn run() {
       sync::test_postgres_connection,
       sync::query_postgres,
       sync::execute_postgres,
+      sync::execute_postgres_raw,
       sync::start_db_listener
     ])
     .run(tauri::generate_context!())

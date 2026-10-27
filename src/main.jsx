@@ -9,8 +9,8 @@ const queryClient = new QueryClient({
   defaultOptions: {
     queries: {
       refetchOnWindowFocus: true,
-      refetchInterval: 500, // Atualização automática instantânea em tempo real (500ms)
-      staleTime: 0,
+      refetchInterval: false,
+      staleTime: 1000,
       retry: 1,
     },
   },

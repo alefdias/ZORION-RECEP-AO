@@ -243,9 +243,6 @@ export function RecepcaoDashboard({
 
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 pt-2">
           {ocupacaoPorAla.map(ala => {
-            const isCritical = ala.percentual >= 90;
-            const isWarning = ala.percentual >= 70 && ala.percentual < 90;
-
             return (
               <div 
                 key={ala.alaId || ala.alaNome}
@@ -253,31 +250,24 @@ export function RecepcaoDashboard({
               >
                 <div className="flex items-center justify-between">
                   <span className="font-bold text-sm text-slate-800">{ala.alaNome}</span>
-                  <span className={`text-xs font-bold px-2 py-0.5 rounded-full ${
-                    isCritical 
-                      ? "bg-rose-100 text-rose-700" 
-                      : isWarning 
-                      ? "bg-amber-100 text-amber-800" 
-                      : "bg-emerald-100 text-emerald-800"
-                  }`}>
-                    {ala.percentual}% ocupado
+                  <span className="text-xs font-bold px-2 py-0.5 rounded-full bg-emerald-100 text-emerald-800 flex items-center gap-1">
+                    <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse" />
+                    Livre (Ilimitado)
                   </span>
                 </div>
 
-                {/* Barra de Progresso */}
-                <div className="w-full h-2.5 bg-slate-200 rounded-full overflow-hidden">
+                {/* Barra de Progresso Suave */}
+                <div className="w-full h-2 bg-slate-200/80 rounded-full overflow-hidden">
                   <div 
-                    className={`h-full rounded-full transition-all duration-500 ${
-                      isCritical ? "bg-rose-500" : isWarning ? "bg-amber-500" : "bg-sky-500"
-                    }`}
-                    style={{ width: `${Math.min(100, ala.percentual)}%` }}
+                    className="h-full rounded-full bg-sky-500 transition-all duration-500"
+                    style={{ width: `${Math.min(100, Math.max(10, ala.ocupados * 5))}%` }}
                   />
                 </div>
 
                 <div className="flex items-center justify-between text-xs text-slate-500">
                   <span><strong>{ala.ocupados}</strong> internados</span>
-                  <span><strong>{ala.disponiveis}</strong> leitos livres</span>
-                  <span>Total: {ala.totalLeitos}</span>
+                  <span><strong>Leitos:</strong> Ilimitados</span>
+                  <span className="text-emerald-700 font-semibold">Sem restrição</span>
                 </div>
               </div>
             );
