@@ -349,6 +349,7 @@ export function App() {
             patients={patients}
             alas={alas}
             currentUser={currentUser}
+            onNewPatient={handleOpenNewPatient}
             onRefresh={handleRefreshAll}
           />
         )}

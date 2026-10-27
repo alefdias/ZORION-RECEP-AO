@@ -35,6 +35,7 @@ export function AtendimentosRecepcao({
   patients = [],
   alas = [],
   currentUser = null,
+  onNewPatient = null,
   onRefresh
 }) {
   const [searchTerm, setSearchTerm] = useState("");
@@ -572,6 +573,7 @@ export function AtendimentosRecepcao({
         patients={patients}
         alas={alas}
         currentUser={currentUser}
+        onNewPatient={onNewPatient}
         onSaved={onRefresh}
       />
     </div>

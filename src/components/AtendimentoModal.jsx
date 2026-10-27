@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useMemo } from "react";
 import { 
   Dialog, 
   DialogContent, 
@@ -18,10 +18,14 @@ import {
   Calendar, 
   Building2, 
   FileText, 
-  Sparkles, 
+  Search, 
   CheckCircle2, 
   ArrowRight,
-  Stethoscope
+  Stethoscope,
+  PlusCircle,
+  UserCheck,
+  RotateCcw,
+  AlertCircle
 } from "lucide-react";
 import { toast } from "sonner";
 import { AtendimentoRecepcaoService } from "@/api/db";
@@ -33,6 +37,7 @@ export function AtendimentoModal({
   patients = [],
   alas = [],
   currentUser = null,
+  onNewPatient = null,
   onSaved
 }) {
   const [formData, setFormData] = useState({
@@ -50,6 +55,8 @@ export function AtendimentoModal({
     observacoes: ""
   });
 
+  const [patientSearch, setPatientSearch] = useState("");
+  const [selectedPatient, setSelectedPatient] = useState(null);
   const [isSubmitting, setIsSubmitting] = useState(false);
 
   // Inicializa o formulário com dados atuais ou do atendimento em edição
@@ -59,6 +66,7 @@ export function AtendimentoModal({
     const agora = new Date();
     const hojeStr = agora.toISOString().split("T")[0];
     const horaAtual = agora.toLocaleTimeString("pt-BR", { hour: "2-digit", minute: "2-digit" });
+    setPatientSearch("");
 
     if (atendimento) {
       setFormData({
@@ -75,7 +83,20 @@ export function AtendimentoModal({
         alaDestinoNome: atendimento.alaDestinoNome || "",
         observacoes: atendimento.observacoes || ""
       });
+
+      const pac = patients.find(p => String(p.id) === String(atendimento.pacienteId));
+      if (pac) {
+        setSelectedPatient(pac);
+      } else {
+        setSelectedPatient({
+          id: atendimento.pacienteId,
+          nome: atendimento.pacienteNome,
+          prontuario: atendimento.prontuario,
+          alaNome: atendimento.alaDestinoNome
+        });
+      }
     } else {
+      setSelectedPatient(null);
       setFormData({
         pacienteId: "",
         pacienteNome: "",
@@ -91,25 +112,43 @@ export function AtendimentoModal({
         observacoes: ""
       });
     }
-  }, [open, atendimento]);
+  }, [open, atendimento, patients]);
 
-  // Se o usuário selecionar um paciente da lista
-  const handleSelectPatient = (pacId) => {
-    if (!pacId || pacId === "outro") {
-      setFormData(prev => ({ ...prev, pacienteId: "", prontuario: "" }));
-      return;
-    }
-    const pac = patients.find(p => String(p.id) === String(pacId));
-    if (pac) {
-      setFormData(prev => ({
-        ...prev,
-        pacienteId: pac.id,
-        pacienteNome: pac.nome,
-        prontuario: pac.prontuario || "",
-        alaDestinoId: pac.alaId || prev.alaDestinoId,
-        alaDestinoNome: pac.alaNome || prev.alaDestinoNome
-      }));
-    }
+  // Filtra pacientes cadastrados no banco de dados pela busca
+  const filteredPatients = useMemo(() => {
+    if (!patients || patients.length === 0) return [];
+    if (!patientSearch.trim()) return patients.slice(0, 15); // Primeiros 15 para navegação rápida
+    const term = patientSearch.trim().toLowerCase();
+    return patients.filter(p => {
+      const nome = (p.nome || "").toLowerCase().includes(term);
+      const pront = (p.prontuario || "").toLowerCase().includes(term);
+      const ala = (p.alaNome || "").toLowerCase().includes(term);
+      return nome || pront || ala;
+    }).slice(0, 20);
+  }, [patients, patientSearch]);
+
+  // Ao selecionar um paciente do banco
+  const handleSelectPatient = (pac) => {
+    setSelectedPatient(pac);
+    setFormData(prev => ({
+      ...prev,
+      pacienteId: pac.id,
+      pacienteNome: pac.nome,
+      prontuario: pac.prontuario || "",
+      alaDestinoId: pac.alaId || prev.alaDestinoId || "",
+      alaDestinoNome: pac.alaNome || prev.alaDestinoNome || ""
+    }));
+  };
+
+  // Desfazer seleção para buscar outro paciente
+  const handleClearPatient = () => {
+    setSelectedPatient(null);
+    setFormData(prev => ({
+      ...prev,
+      pacienteId: "",
+      pacienteNome: "",
+      prontuario: ""
+    }));
   };
 
   // Helper rápido para carimbar "Agora" no horário
@@ -134,8 +173,8 @@ export function AtendimentoModal({
 
   const handleSubmit = async (e) => {
     e.preventDefault();
-    if (!formData.pacienteNome.trim()) {
-      toast.error("Por favor, informe o nome do paciente.");
+    if (!formData.pacienteId || !formData.pacienteNome) {
+      toast.error("Selecione um paciente cadastrado no banco de dados para prosseguir.");
       return;
     }
 
@@ -165,6 +204,15 @@ export function AtendimentoModal({
     }
   };
 
+  const handleCadastrarNovoPaciente = () => {
+    onOpenChange(false);
+    if (onNewPatient) {
+      setTimeout(() => {
+        onNewPatient();
+      }, 200);
+    }
+  };
+
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent className="max-w-2xl w-[95vw] p-0 overflow-hidden rounded-2xl bg-white shadow-2xl border border-slate-200">
@@ -178,73 +226,127 @@ export function AtendimentoModal({
                 {atendimento ? "Editar Atendimento de Recepção" : "Novo Atendimento / Admissão"}
               </DialogTitle>
               <p className="text-xs text-sky-100">
-                Registro de horário de entrada, triagem médica e encaminhamento
+                Registro de fluxo de entrada e consultório para paciente cadastrado
               </p>
             </div>
           </div>
         </DialogHeader>
 
         <form onSubmit={handleSubmit} className="p-6 space-y-5">
-          {/* 1. SELEÇÃO / DIGITAÇÃO DO PACIENTE */}
-          <div className="space-y-3 p-4 rounded-xl bg-slate-50 border border-slate-200/80">
+          {/* 1. SELEÇÃO DO PACIENTE (EXCLUSIVAMENTE DO BANCO DE DADOS) */}
+          <div className="space-y-2.5 p-4 rounded-xl bg-slate-50 border border-slate-200">
             <div className="flex items-center justify-between">
-              <Label className="text-xs font-bold text-slate-700 flex items-center gap-1.5">
-                <User className="w-3.5 h-3.5 text-sky-600" />
-                Identificação do Paciente
+              <Label className="text-xs font-bold text-slate-800 flex items-center gap-1.5">
+                <UserCheck className="w-4 h-4 text-sky-600" />
+                Paciente Cadastrado no Banco de Dados <span className="text-red-500">*</span>
               </Label>
-              <span className="text-[10px] text-slate-400">
-                Selecione um paciente cadastrado ou digite livremente
-              </span>
-            </div>
-
-            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-              <div>
-                <Label className="text-[11px] font-semibold text-slate-500 mb-1 block">
-                  Buscar Paciente Cadastrado:
-                </Label>
-                <Select
-                  value={formData.pacienteId || "outro"}
-                  onValueChange={handleSelectPatient}
+              {selectedPatient && !atendimento && (
+                <button
+                  type="button"
+                  onClick={handleClearPatient}
+                  className="text-[11px] text-sky-600 hover:text-sky-800 font-bold flex items-center gap-1 cursor-pointer"
                 >
-                  <SelectTrigger className="h-9 text-xs bg-white border-slate-300">
-                    <SelectValue placeholder="Selecione um paciente existente..." />
-                  </SelectTrigger>
-                  <SelectContent className="max-h-56">
-                    <SelectItem value="outro">✍️ Outro / Digitar Manualmente</SelectItem>
-                    {patients.map(p => (
-                      <SelectItem key={p.id} value={p.id}>
-                        {p.nome} {p.prontuario ? `(Pront: ${p.prontuario})` : ""}
-                      </SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
-              </div>
-
-              <div>
-                <Label className="text-[11px] font-semibold text-slate-500 mb-1 block">
-                  Prontuário (Opcional):
-                </Label>
-                <Input
-                  placeholder="Ex: 13999"
-                  value={formData.prontuario}
-                  onChange={(e) => setFormData(prev => ({ ...prev, prontuario: e.target.value }))}
-                  className="h-9 text-xs bg-white border-slate-300 font-mono"
-                />
-              </div>
+                  <RotateCcw className="w-3 h-3" />
+                  Trocar Paciente
+                </button>
+              )}
             </div>
 
-            <div>
-              <Label className="text-[11px] font-semibold text-slate-500 mb-1 block">
-                Nome Completo do Paciente: <span className="text-red-500">*</span>
-              </Label>
-              <Input
-                required
-                placeholder="Nome completo do paciente..."
-                value={formData.pacienteNome}
-                onChange={(e) => setFormData(prev => ({ ...prev, pacienteNome: e.target.value }))}
-                className="h-9 text-xs bg-white border-slate-300 font-bold text-slate-800"
-              />
-            </div>
+            {selectedPatient ? (
+              /* CARD DO PACIENTE SELECIONADO (DADOS FIXOS DO BANCO) */
+              <div className="p-3.5 rounded-xl bg-white border border-sky-200 shadow-xs flex items-center justify-between gap-3">
+                <div className="flex items-center gap-3 min-w-0">
+                  <div className="w-10 h-10 rounded-xl bg-sky-100 text-sky-700 flex items-center justify-center font-bold text-sm shrink-0">
+                    {selectedPatient.nome ? selectedPatient.nome.charAt(0).toUpperCase() : "P"}
+                  </div>
+                  <div className="min-w-0">
+                    <h4 className="font-bold text-slate-800 text-sm truncate">
+                      {selectedPatient.nome}
+                    </h4>
+                    <div className="flex items-center gap-2 mt-0.5 flex-wrap">
+                      <Badge variant="outline" className="font-mono text-[10px] bg-slate-50 border-slate-300 text-slate-700">
+                        Prontuário: {selectedPatient.prontuario || "S/ Prontuário"}
+                      </Badge>
+                      {selectedPatient.alaNome && (
+                        <Badge variant="outline" className="text-[10px] bg-indigo-50 border-indigo-200 text-indigo-700">
+                          Ala: {selectedPatient.alaNome}
+                        </Badge>
+                      )}
+                      {selectedPatient.leito && (
+                        <span className="text-[10px] text-slate-500 font-semibold">
+                          Leito: {selectedPatient.leito}
+                        </span>
+                      )}
+                    </div>
+                  </div>
+                </div>
+
+                <div className="shrink-0 flex items-center gap-1 text-emerald-600 font-bold text-xs">
+                  <CheckCircle2 className="w-4 h-4" />
+                  <span className="hidden sm:inline">Confirmado</span>
+                </div>
+              </div>
+            ) : (
+              /* CAMPO DE BUSCA E SELEÇÃO DE PACIENTES CADASTRADOS */
+              <div className="space-y-2">
+                <div className="relative">
+                  <Search className="w-4 h-4 text-slate-400 absolute left-3 top-2.5" />
+                  <Input
+                    placeholder="Digite o nome ou prontuário do paciente cadastrado..."
+                    value={patientSearch}
+                    onChange={(e) => setPatientSearch(e.target.value)}
+                    className="pl-9 h-9 text-xs bg-white border-slate-300"
+                    autoFocus
+                  />
+                </div>
+
+                {/* Lista de pacientes filtrados do banco */}
+                <div className="max-h-44 overflow-y-auto divide-y divide-slate-100 rounded-xl border border-slate-200 bg-white shadow-inner">
+                  {filteredPatients.length === 0 ? (
+                    <div className="p-4 text-center text-xs text-slate-400">
+                      Nenhum paciente cadastrado encontrado com esse termo.
+                    </div>
+                  ) : (
+                    filteredPatients.map(p => (
+                      <button
+                        key={p.id}
+                        type="button"
+                        onClick={() => handleSelectPatient(p)}
+                        className="w-full text-left p-2.5 hover:bg-sky-50 transition-colors flex items-center justify-between gap-2 cursor-pointer group"
+                      >
+                        <div className="min-w-0">
+                          <div className="font-bold text-slate-800 text-xs truncate group-hover:text-sky-700">
+                            {p.nome}
+                          </div>
+                          <div className="text-[10px] text-slate-400 font-mono">
+                            Prontuário: <b>{p.prontuario || "Não informado"}</b>
+                            {p.alaNome ? ` • Ala: ${p.alaNome}` : ""}
+                          </div>
+                        </div>
+                        <span className="text-[10px] font-bold text-sky-600 bg-sky-50 group-hover:bg-sky-100 px-2 py-0.5 rounded-lg shrink-0">
+                          Selecionar ➔
+                        </span>
+                      </button>
+                    ))
+                  )}
+                </div>
+
+                {/* Botão de aviso se o paciente ainda não estiver cadastrado */}
+                <div className="pt-1 flex items-center justify-between text-xs text-slate-500">
+                  <span className="text-[11px] text-slate-400">
+                    O paciente não está na lista?
+                  </span>
+                  <button
+                    type="button"
+                    onClick={handleCadastrarNovoPaciente}
+                    className="text-[11px] text-sky-700 hover:text-sky-900 font-bold flex items-center gap-1 cursor-pointer bg-sky-50 hover:bg-sky-100 px-2.5 py-1 rounded-lg border border-sky-200"
+                  >
+                    <PlusCircle className="w-3.5 h-3.5" />
+                    Cadastrar Paciente Primeiro
+                  </button>
+                </div>
+              </div>
+            )}
           </div>
 
           {/* 2. DATAS E HORÁRIOS AUTOMÁTICOS */}
@@ -255,7 +357,7 @@ export function AtendimentoModal({
             </Label>
 
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-              {/* Data Admissão */}
+              {/* Data Admissão (Automática) */}
               <div>
                 <Label className="text-[11px] font-semibold text-slate-500 mb-1 block">
                   Data de Admissão:
@@ -381,7 +483,7 @@ export function AtendimentoModal({
             )}
           </div>
 
-          {/* 3. MOTIVO (ALTA OU ADMISSÃO) & DESTINO */}
+          {/* 3. MOTIVO (ALTA OU ADMISSÃO) & ALA QUE PACIENTE VAI */}
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 pt-1">
             <div>
               <Label className="text-[11px] font-semibold text-slate-500 mb-1 block">
@@ -445,7 +547,7 @@ export function AtendimentoModal({
             </Label>
             <Textarea
               rows={2}
-              placeholder="Ex: Queixa principal, acompanhante, observações da triagem..."
+              placeholder="Ex: Queixa principal, acompanhante, encaminhamentos médicos..."
               value={formData.observacoes}
               onChange={(e) => setFormData(prev => ({ ...prev, observacoes: e.target.value }))}
               className="text-xs bg-white border-slate-300 resize-none"
@@ -463,8 +565,8 @@ export function AtendimentoModal({
             </Button>
             <Button
               type="submit"
-              disabled={isSubmitting}
-              className="bg-sky-600 hover:bg-sky-700 text-white font-bold text-xs h-9 cursor-pointer shadow-sm"
+              disabled={isSubmitting || !formData.pacienteId}
+              className="bg-sky-600 hover:bg-sky-700 text-white font-bold text-xs h-9 cursor-pointer shadow-sm disabled:opacity-50"
             >
               {isSubmitting ? "Salvando..." : (atendimento ? "Salvar Alterações" : "Registrar Atendimento")}
             </Button>
