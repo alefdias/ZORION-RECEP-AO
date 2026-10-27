@@ -9,7 +9,8 @@ import {
   Activity, 
   LogOut,
   UserCheck,
-  Settings
+  Settings,
+  Stethoscope
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { ServerConnectionBadge } from "@/components/ServerConnectionBadge";
@@ -18,7 +19,8 @@ import { ConfiguracoesRecepcaoModal } from "@/components/ConfiguracoesRecepcaoMo
 import { RecepcaoDashboard } from "@/pages/RecepcaoDashboard";
 import { PacientesList } from "@/pages/PacientesList";
 import { VisitasManager } from "@/pages/VisitasManager";
-import { PacienteService, AlaService, VisitaService, EstatisticasService, initDbListener, ensureRecepcaoTables } from "@/api/db";
+import { AtendimentosRecepcao } from "@/pages/AtendimentosRecepcao";
+import { PacienteService, AlaService, VisitaService, AtendimentoRecepcaoService, EstatisticasService, initDbListener, ensureRecepcaoTables } from "@/api/db";
 import { WelcomeScreenRecepcao } from "@/components/WelcomeScreenRecepcao";
 import { ZorionChatWidget } from "@/components/chat/ZorionChatWidget";
 import { toast } from "sonner";
@@ -99,11 +101,19 @@ export function App() {
     refetchInterval: 5000,
   });
 
+  const { data: atendimentos = [], refetch: refetchAtendimentos } = useQuery({
+    queryKey: ["recepcao_atendimentos"],
+    queryFn: () => AtendimentoRecepcaoService.list(),
+    enabled: Boolean(currentUser),
+    refetchInterval: 5000,
+  });
+
   const handleRefreshAll = () => {
     refetchPatients();
     refetchAlas();
     refetchMetrics();
     refetchVisitas();
+    refetchAtendimentos();
   };
 
   const handleGoToPatients = (status = "all") => {
@@ -193,6 +203,17 @@ export function App() {
               <UserCheck className="w-4 h-4 text-emerald-600" />
               Visitas ({visitas.filter(v => !v.dataHoraSaida || v.status === "Em Andamento").length})
             </button>
+            <button
+              onClick={() => setActiveTab("atendimentos")}
+              className={`flex items-center gap-2 px-4 py-2 rounded-xl text-xs font-bold transition-all cursor-pointer ${
+                activeTab === "atendimentos"
+                  ? "bg-white text-sky-700 shadow-sm"
+                  : "text-slate-600 hover:text-slate-900"
+              }`}
+            >
+              <Stethoscope className="w-4 h-4 text-sky-600" />
+              Atendimentos ({atendimentos.filter(a => !a.horarioSaidaConsultorio).length})
+            </button>
           </nav>
 
           {/* Ações da Direita & Conexão */}
@@ -267,7 +288,16 @@ export function App() {
             }`}
           >
             <UserCheck className="w-4 h-4" />
-            Visitas ({visitas.filter(v => !v.dataHoraSaida || v.status === "Em Andamento").length})
+            Visitas
+          </button>
+          <button
+            onClick={() => setActiveTab("atendimentos")}
+            className={`flex items-center gap-1.5 py-1 text-xs font-bold ${
+              activeTab === "atendimentos" ? "text-sky-600" : "text-slate-500"
+            }`}
+          >
+            <Stethoscope className="w-4 h-4" />
+            Atendimentos
           </button>
           <button
             onClick={handleLogout}
@@ -308,6 +338,16 @@ export function App() {
           <VisitasManager
             visitas={visitas}
             patients={patients}
+            currentUser={currentUser}
+            onRefresh={handleRefreshAll}
+          />
+        )}
+
+        {activeTab === "atendimentos" && (
+          <AtendimentosRecepcao
+            atendimentos={atendimentos}
+            patients={patients}
+            alas={alas}
             currentUser={currentUser}
             onRefresh={handleRefreshAll}
           />

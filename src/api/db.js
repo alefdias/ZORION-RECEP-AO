@@ -164,6 +164,50 @@ export async function ensureRecepcaoTables() {
       ALTER TABLE "Visita" ADD COLUMN IF NOT EXISTS "foto_recusada_motivo" TEXT;
       ALTER TABLE "Visita" ADD COLUMN IF NOT EXISTS "created_at" TEXT;
       ALTER TABLE "Visita" ADD COLUMN IF NOT EXISTS "deleted_at" TEXT;
+
+      CREATE TABLE IF NOT EXISTS "AtendimentoRecepcao" (
+        "id" TEXT PRIMARY KEY,
+        "pacienteId" TEXT,
+        "pacienteNome" TEXT NOT NULL,
+        "prontuario" TEXT,
+        "dataAdmissao" TEXT NOT NULL,
+        "horarioEntrada" TEXT NOT NULL,
+        "horarioAvisoEquipe" TEXT,
+        "horarioEntradaConsultorio" TEXT,
+        "horarioSaidaConsultorio" TEXT,
+        "motivo" TEXT DEFAULT 'Admissão',
+        "alaDestinoId" TEXT,
+        "alaDestinoNome" TEXT,
+        "tempoAtendimento" TEXT,
+        "tempoEspera" TEXT,
+        "tempoConsultorio" TEXT,
+        "observacoes" TEXT,
+        "recepcionista" TEXT,
+        "status" TEXT DEFAULT 'Aguardando',
+        "created_at" TEXT,
+        "updated_at" TEXT,
+        "deleted_at" TEXT
+      );
+      ALTER TABLE "AtendimentoRecepcao" ADD COLUMN IF NOT EXISTS "pacienteId" TEXT;
+      ALTER TABLE "AtendimentoRecepcao" ADD COLUMN IF NOT EXISTS "pacienteNome" TEXT;
+      ALTER TABLE "AtendimentoRecepcao" ADD COLUMN IF NOT EXISTS "prontuario" TEXT;
+      ALTER TABLE "AtendimentoRecepcao" ADD COLUMN IF NOT EXISTS "dataAdmissao" TEXT;
+      ALTER TABLE "AtendimentoRecepcao" ADD COLUMN IF NOT EXISTS "horarioEntrada" TEXT;
+      ALTER TABLE "AtendimentoRecepcao" ADD COLUMN IF NOT EXISTS "horarioAvisoEquipe" TEXT;
+      ALTER TABLE "AtendimentoRecepcao" ADD COLUMN IF NOT EXISTS "horarioEntradaConsultorio" TEXT;
+      ALTER TABLE "AtendimentoRecepcao" ADD COLUMN IF NOT EXISTS "horarioSaidaConsultorio" TEXT;
+      ALTER TABLE "AtendimentoRecepcao" ADD COLUMN IF NOT EXISTS "motivo" TEXT DEFAULT 'Admissão';
+      ALTER TABLE "AtendimentoRecepcao" ADD COLUMN IF NOT EXISTS "alaDestinoId" TEXT;
+      ALTER TABLE "AtendimentoRecepcao" ADD COLUMN IF NOT EXISTS "alaDestinoNome" TEXT;
+      ALTER TABLE "AtendimentoRecepcao" ADD COLUMN IF NOT EXISTS "tempoAtendimento" TEXT;
+      ALTER TABLE "AtendimentoRecepcao" ADD COLUMN IF NOT EXISTS "tempoEspera" TEXT;
+      ALTER TABLE "AtendimentoRecepcao" ADD COLUMN IF NOT EXISTS "tempoConsultorio" TEXT;
+      ALTER TABLE "AtendimentoRecepcao" ADD COLUMN IF NOT EXISTS "observacoes" TEXT;
+      ALTER TABLE "AtendimentoRecepcao" ADD COLUMN IF NOT EXISTS "recepcionista" TEXT;
+      ALTER TABLE "AtendimentoRecepcao" ADD COLUMN IF NOT EXISTS "status" TEXT DEFAULT 'Aguardando';
+      ALTER TABLE "AtendimentoRecepcao" ADD COLUMN IF NOT EXISTS "created_at" TEXT;
+      ALTER TABLE "AtendimentoRecepcao" ADD COLUMN IF NOT EXISTS "updated_at" TEXT;
+      ALTER TABLE "AtendimentoRecepcao" ADD COLUMN IF NOT EXISTS "deleted_at" TEXT;
     `;
     try {
       await executePostgresRaw(q);
@@ -551,5 +595,195 @@ export const VisitaService = {
     await logAuditoria("EXCLUIR_VISITA", id, {});
   }
 };
+
+// ── SERVIÇO DE ATENDIMENTO & FLUXO DE RECEPÇÃO ──────────────────────────────
+export const AtendimentoRecepcaoService = {
+  // Helper para calcular a duração entre horários no formato HH:mm ou ISO
+  calcularDiferenca(horaInicio, horaFim) {
+    if (!horaInicio || !horaFim) return "";
+    try {
+      const getMinutos = (str) => {
+        if (!str) return null;
+        if (str.includes("T")) {
+          const d = new Date(str);
+          return d.getHours() * 60 + d.getMinutes();
+        }
+        const partes = str.trim().split(":");
+        if (partes.length >= 2) {
+          const h = parseInt(partes[0], 10);
+          const m = parseInt(partes[1], 10);
+          if (isNaN(h) || isNaN(m)) return null;
+          return h * 60 + m;
+        }
+        return null;
+      };
+
+      const mIni = getMinutos(horaInicio);
+      const mFim = getMinutos(horaFim);
+      if (mIni === null || mFim === null) return "";
+
+      let diff = mFim - mIni;
+      if (diff < 0) diff += 24 * 60; // Caso vire a meia-noite
+
+      const horas = Math.floor(diff / 60);
+      const minutos = diff % 60;
+
+      if (horas > 0) {
+        return minutos > 0 ? `${horas}h ${minutos}min` : `${horas}h`;
+      }
+      return `${minutos} min`;
+    } catch {
+      return "";
+    }
+  },
+
+  async list({ data = null, motivo = "all", status = "all", search = "" } = {}) {
+    let q = `SELECT * FROM "AtendimentoRecepcao" WHERE "deleted_at" IS NULL`;
+
+    if (data) {
+      const safeData = data.replace(/'/g, "''");
+      q += ` AND "dataAdmissao" = '${safeData}'`;
+    }
+
+    if (motivo && motivo !== "all") {
+      const safeMotivo = motivo.replace(/'/g, "''");
+      q += ` AND LOWER("motivo") = LOWER('${safeMotivo}')`;
+    }
+
+    if (status && status !== "all") {
+      const safeStatus = status.replace(/'/g, "''");
+      q += ` AND LOWER("status") = LOWER('${safeStatus}')`;
+    }
+
+    if (search && search.trim()) {
+      const s = search.trim().replace(/'/g, "''").toLowerCase();
+      q += ` AND (LOWER("pacienteNome") LIKE '%${s}%' OR LOWER("prontuario") LIKE '%${s}%' OR LOWER("alaDestinoNome") LIKE '%${s}%')`;
+    }
+
+    q += ` ORDER BY "dataAdmissao" DESC, "horarioEntrada" DESC, "created_at" DESC`;
+
+    try {
+      return await queryPostgres(q);
+    } catch (e) {
+      console.warn("Aviso ao buscar atendimentos do postgres:", e);
+      return [];
+    }
+  },
+
+  async create(data) {
+    const id = crypto.randomUUID();
+    const now = new Date().toISOString();
+    const safePacienteId = (data.pacienteId || "").replace(/'/g, "''");
+    const safePacienteNome = (data.pacienteNome || "").trim().replace(/'/g, "''");
+    const safeProntuario = (data.prontuario || "").trim().replace(/'/g, "''");
+    const safeDataAdmissao = (data.dataAdmissao || now.split("T")[0]).replace(/'/g, "''");
+    
+    // Horário de entrada padrão atual se não informado
+    const curHour = new Date().toLocaleTimeString("pt-BR", { hour: "2-digit", minute: "2-digit" });
+    const safeEntrada = (data.horarioEntrada || curHour).replace(/'/g, "''");
+    const safeAviso = (data.horarioAvisoEquipe || "").replace(/'/g, "''");
+    const safeEntradaCons = (data.horarioEntradaConsultorio || "").replace(/'/g, "''");
+    const safeSaidaCons = (data.horarioSaidaConsultorio || "").replace(/'/g, "''");
+    const safeMotivo = (data.motivo || "Admissão").replace(/'/g, "''");
+    const safeAlaId = (data.alaDestinoId || "").replace(/'/g, "''");
+    const safeAlaNome = (data.alaDestinoNome || "").replace(/'/g, "''");
+    
+    // Calcula durações automáticas
+    const tempoAtendimento = this.calcularDiferenca(safeEntrada, safeSaidaCons);
+    const tempoEspera = this.calcularDiferenca(safeEntrada, safeEntradaCons);
+    const tempoConsultorio = this.calcularDiferenca(safeEntradaCons, safeSaidaCons);
+
+    const safeObs = (data.observacoes || "").replace(/'/g, "''");
+    const safeRecepcionista = (data.recepcionista || "Recepção").replace(/'/g, "''");
+
+    let status = "Aguardando";
+    if (safeSaidaCons) {
+      status = "Finalizado";
+    } else if (safeEntradaCons) {
+      status = "Em Atendimento";
+    } else if (safeAviso) {
+      status = "Equipe Avisada";
+    }
+
+    const q = `
+      INSERT INTO "AtendimentoRecepcao" (
+        "id", "pacienteId", "pacienteNome", "prontuario", "dataAdmissao",
+        "horarioEntrada", "horarioAvisoEquipe", "horarioEntradaConsultorio", "horarioSaidaConsultorio",
+        "motivo", "alaDestinoId", "alaDestinoNome", "tempoAtendimento", "tempoEspera", "tempoConsultorio",
+        "observacoes", "recepcionista", "status", "created_at"
+      ) VALUES (
+        '${id}', '${safePacienteId}', '${safePacienteNome}', '${safeProntuario}', '${safeDataAdmissao}',
+        '${safeEntrada}', '${safeAviso}', '${safeEntradaCons}', '${safeSaidaCons}',
+        '${safeMotivo}', '${safeAlaId}', '${safeAlaNome}', '${tempoAtendimento}', '${tempoEspera}', '${tempoConsultorio}',
+        '${safeObs}', '${safeRecepcionista}', '${status}', '${now}'
+      );
+    `;
+    await executePostgres(q);
+    await logAuditoria("CADASTRAR_ATENDIMENTO", id, { pacienteNome: data.pacienteNome, motivo: safeMotivo });
+    return {
+      id,
+      ...data,
+      tempoAtendimento,
+      tempoEspera,
+      tempoConsultorio,
+      status,
+      created_at: now
+    };
+  },
+
+  async update(id, data) {
+    const now = new Date().toISOString();
+    const sets = [];
+
+    if (data.pacienteId !== undefined) sets.push(`"pacienteId" = '${(data.pacienteId || "").replace(/'/g, "''")}'`);
+    if (data.pacienteNome !== undefined) sets.push(`"pacienteNome" = '${(data.pacienteNome || "").trim().replace(/'/g, "''")}'`);
+    if (data.prontuario !== undefined) sets.push(`"prontuario" = '${(data.prontuario || "").trim().replace(/'/g, "''")}'`);
+    if (data.dataAdmissao !== undefined) sets.push(`"dataAdmissao" = '${(data.dataAdmissao || "").replace(/'/g, "''")}'`);
+    if (data.horarioEntrada !== undefined) sets.push(`"horarioEntrada" = '${(data.horarioEntrada || "").replace(/'/g, "''")}'`);
+    if (data.horarioAvisoEquipe !== undefined) sets.push(`"horarioAvisoEquipe" = '${(data.horarioAvisoEquipe || "").replace(/'/g, "''")}'`);
+    if (data.horarioEntradaConsultorio !== undefined) sets.push(`"horarioEntradaConsultorio" = '${(data.horarioEntradaConsultorio || "").replace(/'/g, "''")}'`);
+    if (data.horarioSaidaConsultorio !== undefined) sets.push(`"horarioSaidaConsultorio" = '${(data.horarioSaidaConsultorio || "").replace(/'/g, "''")}'`);
+    if (data.motivo !== undefined) sets.push(`"motivo" = '${(data.motivo || "").replace(/'/g, "''")}'`);
+    if (data.alaDestinoId !== undefined) sets.push(`"alaDestinoId" = '${(data.alaDestinoId || "").replace(/'/g, "''")}'`);
+    if (data.alaDestinoNome !== undefined) sets.push(`"alaDestinoNome" = '${(data.alaDestinoNome || "").replace(/'/g, "''")}'`);
+    if (data.observacoes !== undefined) sets.push(`"observacoes" = '${(data.observacoes || "").replace(/'/g, "''")}'`);
+
+    // Recalcula tempos se algum horário for fornecido
+    const tempoAtendimento = this.calcularDiferenca(data.horarioEntrada, data.horarioSaidaConsultorio);
+    const tempoEspera = this.calcularDiferenca(data.horarioEntrada, data.horarioEntradaConsultorio);
+    const tempoConsultorio = this.calcularDiferenca(data.horarioEntradaConsultorio, data.horarioSaidaConsultorio);
+
+    if (tempoAtendimento) sets.push(`"tempoAtendimento" = '${tempoAtendimento}'`);
+    if (tempoEspera) sets.push(`"tempoEspera" = '${tempoEspera}'`);
+    if (tempoConsultorio) sets.push(`"tempoConsultorio" = '${tempoConsultorio}'`);
+
+    let status = data.status;
+    if (!status) {
+      if (data.horarioSaidaConsultorio) {
+        status = "Finalizado";
+      } else if (data.horarioEntradaConsultorio) {
+        status = "Em Atendimento";
+      } else if (data.horarioAvisoEquipe) {
+        status = "Equipe Avisada";
+      } else {
+        status = "Aguardando";
+      }
+    }
+    sets.push(`"status" = '${status}'`);
+    sets.push(`"updated_at" = '${now}'`);
+
+    const q = `UPDATE "AtendimentoRecepcao" SET ${sets.join(", ")} WHERE "id" = '${id}';`;
+    await executePostgres(q);
+    await logAuditoria("ATUALIZAR_ATENDIMENTO", id, { status });
+  },
+
+  async delete(id) {
+    const now = new Date().toISOString();
+    const q = `UPDATE "AtendimentoRecepcao" SET "deleted_at" = '${now}' WHERE "id" = '${id}';`;
+    await executePostgres(q);
+    await logAuditoria("EXCLUIR_ATENDIMENTO", id, {});
+  }
+};
+
 
 
