@@ -1,6 +1,6 @@
 [package]
 name = "zorion-recepcao"
-version = "1.0.5"
+version = "1.0.6"
 description = "Zorion Recepção - Gestão de Pacientes e Internações"
 authors = ["Zorion"]
 license = ""
