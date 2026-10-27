@@ -1,3 +1,9 @@
+-- ==============================================================================
+-- ZORION SAÚDE / ZORION RECEPÇÃO / ZORION MÉDICO - SCHEMA COMPLETO UNIFICADO
+-- PostgreSQL Database Initial Schema & Migration Script
+-- ==============================================================================
+
+-- 1. MEDICAMENTO
 CREATE TABLE IF NOT EXISTS "Medicamento" (
     "id" TEXT PRIMARY KEY,
     "nome" TEXT,
@@ -18,18 +24,29 @@ ALTER TABLE "Medicamento" ADD COLUMN IF NOT EXISTS "is_adiantamento" BOOLEAN DEF
 ALTER TABLE "Medicamento" ADD COLUMN IF NOT EXISTS "nota_fiscal" TEXT;
 ALTER TABLE "Medicamento" ADD COLUMN IF NOT EXISTS "valor_compra" REAL;
 ALTER TABLE "Medicamento" ADD COLUMN IF NOT EXISTS "fornecedor_nome" TEXT;
+ALTER TABLE "Medicamento" ADD COLUMN IF NOT EXISTS "volume_frasco_ml" NUMERIC;
+ALTER TABLE "Medicamento" ADD COLUMN IF NOT EXISTS "is_liquido" BOOLEAN DEFAULT false;
+ALTER TABLE "Medicamento" ADD COLUMN IF NOT EXISTS "medicamento_origem_id" TEXT;
+ALTER TABLE "Medicamento" ADD COLUMN IF NOT EXISTS "fator_fracionamento" INTEGER DEFAULT 0;
 
+-- 2. LOTE
 CREATE TABLE IF NOT EXISTS "Lote" (
     "id" TEXT PRIMARY KEY,
     "medicamento_id" TEXT,
     "numero_lote" TEXT,
     "data_validade" TEXT,
+    "quantidade_inicial" INTEGER,
     "quantidade_atual" INTEGER,
+    "volume_frasco_ml" NUMERIC,
     "status" TEXT,
     "created_at" TEXT,
     "deleted_at" TEXT
 );
 
+ALTER TABLE "Lote" ADD COLUMN IF NOT EXISTS "volume_frasco_ml" NUMERIC;
+ALTER TABLE "Lote" ADD COLUMN IF NOT EXISTS "quantidade_inicial" INTEGER;
+
+-- 3. ENTRADA DE ESTOQUE
 CREATE TABLE IF NOT EXISTS "Entrada" (
     "id" TEXT PRIMARY KEY,
     "medicamento_id" TEXT,
@@ -53,7 +70,11 @@ ALTER TABLE "Entrada" ADD COLUMN IF NOT EXISTS "data_validade" TEXT;
 ALTER TABLE "Entrada" ADD COLUMN IF NOT EXISTS "fornecedor_nome" TEXT;
 ALTER TABLE "Entrada" ADD COLUMN IF NOT EXISTS "numero_nota_fiscal" TEXT;
 ALTER TABLE "Entrada" ADD COLUMN IF NOT EXISTS "tipo" TEXT;
+ALTER TABLE "Entrada" ADD COLUMN IF NOT EXISTS "volume_frasco_ml" NUMERIC;
+ALTER TABLE "Entrada" ADD COLUMN IF NOT EXISTS "medicamento_nome" TEXT;
+ALTER TABLE "Entrada" ADD COLUMN IF NOT EXISTS "data_entrada" TEXT;
 
+-- 4. SAÍDA DE ESTOQUE
 CREATE TABLE IF NOT EXISTS "Saida" (
     "id" TEXT PRIMARY KEY,
     "medicamento_id" TEXT,
@@ -67,6 +88,7 @@ CREATE TABLE IF NOT EXISTS "Saida" (
     "deleted_at" TEXT
 );
 
+-- 5. FORNECEDOR
 CREATE TABLE IF NOT EXISTS "Fornecedor" (
     "id" TEXT PRIMARY KEY,
     "nome" TEXT,
@@ -84,6 +106,15 @@ CREATE TABLE IF NOT EXISTS "Fornecedor" (
     "deleted_at" TEXT
 );
 
+ALTER TABLE "Fornecedor" ADD COLUMN IF NOT EXISTS "razao_social" TEXT;
+ALTER TABLE "Fornecedor" ADD COLUMN IF NOT EXISTS "municipio" TEXT;
+ALTER TABLE "Fornecedor" ADD COLUMN IF NOT EXISTS "uf" TEXT;
+ALTER TABLE "Fornecedor" ADD COLUMN IF NOT EXISTS "situacao" TEXT DEFAULT 'ATIVA';
+ALTER TABLE "Fornecedor" ADD COLUMN IF NOT EXISTS "cnae" TEXT DEFAULT '4644-3/01';
+ALTER TABLE "Fornecedor" ADD COLUMN IF NOT EXISTS "endereco" TEXT;
+ALTER TABLE "Fornecedor" ADD COLUMN IF NOT EXISTS "contato" TEXT;
+
+-- 6. ALA HOSPITALAR
 CREATE TABLE IF NOT EXISTS "Ala" (
     "id" TEXT PRIMARY KEY,
     "nome" TEXT,
@@ -92,8 +123,10 @@ CREATE TABLE IF NOT EXISTS "Ala" (
     "created_at" TEXT,
     "deleted_at" TEXT
 );
+
 ALTER TABLE "Ala" ADD COLUMN IF NOT EXISTS "leitos" INTEGER DEFAULT 10;
 
+-- 7. EMPRÉSTIMO
 CREATE TABLE IF NOT EXISTS "Emprestimo" (
     "id" TEXT PRIMARY KEY,
     "medicamento_id" TEXT,
@@ -107,6 +140,7 @@ CREATE TABLE IF NOT EXISTS "Emprestimo" (
     "deleted_at" TEXT
 );
 
+-- 8. CATEGORIA
 CREATE TABLE IF NOT EXISTS "Categoria" (
     "id" TEXT PRIMARY KEY,
     "nome" TEXT,
@@ -115,6 +149,7 @@ CREATE TABLE IF NOT EXISTS "Categoria" (
     "deleted_at" TEXT
 );
 
+-- 9. INVENTÁRIO
 CREATE TABLE IF NOT EXISTS "Inventario" (
     "id" TEXT PRIMARY KEY,
     "data_inicio" TEXT,
@@ -137,6 +172,7 @@ CREATE TABLE IF NOT EXISTS "InventarioItem" (
     "deleted_at" TEXT
 );
 
+-- 10. CONFIGURAÇÕES
 CREATE TABLE IF NOT EXISTS "Config" (
     "id" TEXT PRIMARY KEY,
     "chave" TEXT,
@@ -145,6 +181,7 @@ CREATE TABLE IF NOT EXISTS "Config" (
     "deleted_at" TEXT
 );
 
+-- 11. CARRINHO DE EMERGÊNCIA
 CREATE TABLE IF NOT EXISTS "CarrinhoPadronizacao" (
     "id" TEXT PRIMARY KEY,
     "medicamento_id" TEXT,
@@ -181,32 +218,98 @@ CREATE TABLE IF NOT EXISTS "CarrinhoMovimentacao" (
     "deleted_at" TEXT
 );
 
+-- 12. GAVETA DO PACIENTE (FRACIONAMENTO)
+CREATE TABLE IF NOT EXISTS "GavetaPaciente" (
+    "id" TEXT PRIMARY KEY,
+    "paciente_id" TEXT,
+    "medicamento_id" TEXT,
+    "lote_id" TEXT,
+    "quantidade" INTEGER,
+    "created_at" TEXT,
+    "deleted_at" TEXT
+);
+
+-- 13. PACIENTE
 CREATE TABLE IF NOT EXISTS "Paciente" (
     "id" TEXT PRIMARY KEY,
-    "nome" TEXT,
+    "nome" TEXT NOT NULL,
     "prontuario" TEXT,
+    "idade" INTEGER,
     "data_nascimento" TEXT,
+    "alaId" TEXT,
     "ala_id" TEXT,
+    "alaNome" TEXT,
     "leito" TEXT,
-    "status" TEXT,
+    "status" TEXT DEFAULT 'Ativo',
+    "observacoes" TEXT,
+    "dataAlta" TEXT,
     "foto" TEXT,
     "created_at" TEXT,
     "deleted_at" TEXT
 );
 
+ALTER TABLE "Paciente" ADD COLUMN IF NOT EXISTS "idade" INTEGER;
+ALTER TABLE "Paciente" ADD COLUMN IF NOT EXISTS "alaId" TEXT;
+ALTER TABLE "Paciente" ADD COLUMN IF NOT EXISTS "alaNome" TEXT;
+ALTER TABLE "Paciente" ADD COLUMN IF NOT EXISTS "leito" TEXT;
+ALTER TABLE "Paciente" ADD COLUMN IF NOT EXISTS "status" TEXT DEFAULT 'Ativo';
+ALTER TABLE "Paciente" ADD COLUMN IF NOT EXISTS "observacoes" TEXT;
+ALTER TABLE "Paciente" ADD COLUMN IF NOT EXISTS "dataAlta" TEXT;
 ALTER TABLE "Paciente" ADD COLUMN IF NOT EXISTS "foto" TEXT;
+ALTER TABLE "Paciente" ADD COLUMN IF NOT EXISTS "created_at" TEXT;
+ALTER TABLE "Paciente" ADD COLUMN IF NOT EXISTS "deleted_at" TEXT;
 
+-- 14. PRESCRIÇÃO DO PACIENTE (COM DADOS MÉDICOS E APRAZAMENTO)
 CREATE TABLE IF NOT EXISTS "PrescricaoPaciente" (
     "id" TEXT PRIMARY KEY,
+    "pacienteId" TEXT,
     "paciente_id" TEXT,
+    "pacienteNome" TEXT,
+    "prontuario" TEXT,
+    "alaNome" TEXT,
+    "leito" TEXT,
+    "medicamentoId" TEXT,
     "medicamento_id" TEXT,
+    "medicamentoNome" TEXT,
     "medicamento_nome" TEXT,
+    "medicamentoCodigo" TEXT,
+    "apresentacao" TEXT,
     "concentracao" TEXT,
-    "frequencia" TEXT,
-    "via_administracao" TEXT,
+    "dose08" TEXT,
+    "dose14" TEXT,
+    "dose22" TEXT,
+    "dose06" TEXT,
+    "isMetade08" BOOLEAN DEFAULT false,
+    "isMetade14" BOOLEAN DEFAULT false,
+    "isMetade22" BOOLEAN DEFAULT false,
+    "isMetade06" BOOLEAN DEFAULT false,
+    "totalDiario" NUMERIC,
+    "esquemaPosologico" TEXT,
+    "horarios" TEXT,
+    "observacoes" TEXT,
+    "dataInicio" TEXT,
     "data_inicio" TEXT,
+    "dataFim" TEXT,
     "data_fim" TEXT,
-    "status" TEXT,
+    "status" TEXT DEFAULT 'Ativa',
+    "viaAdministracao" TEXT,
+    "via_administracao" TEXT,
+    "diasSemana" TEXT,
+    "tipoFrequencia" TEXT DEFAULT 'diaria',
+    "intervaloDias" INTEGER DEFAULT 1,
+    "horarioInicio" TEXT DEFAULT '08:00',
+    "is_liquido" BOOLEAN DEFAULT false,
+    "unidade_dose" TEXT DEFAULT 'comp',
+    "volume_frasco_ml" NUMERIC,
+    "duracao_frasco_dias" INTEGER,
+    "data_ultimo_frasco" TEXT,
+    "data_proximo_frasco" TEXT,
+    "medico_nome" TEXT,
+    "medico_crm" TEXT,
+    "motivo_alteracao" TEXT,
+    "medico_alterou" TEXT,
+    "data_alteracao" TEXT,
+    "historico_alteracoes" TEXT,
     "created_at" TEXT,
     "deleted_at" TEXT
 );
@@ -239,13 +342,83 @@ ALTER TABLE "PrescricaoPaciente" ADD COLUMN IF NOT EXISTS "status" TEXT DEFAULT 
 ALTER TABLE "PrescricaoPaciente" ADD COLUMN IF NOT EXISTS "viaAdministracao" TEXT;
 ALTER TABLE "PrescricaoPaciente" ADD COLUMN IF NOT EXISTS "via_administracao" TEXT;
 ALTER TABLE "PrescricaoPaciente" ADD COLUMN IF NOT EXISTS "horarioInicio" TEXT DEFAULT '08:00';
+ALTER TABLE "PrescricaoPaciente" ADD COLUMN IF NOT EXISTS "is_liquido" BOOLEAN DEFAULT false;
+ALTER TABLE "PrescricaoPaciente" ADD COLUMN IF NOT EXISTS "unidade_dose" TEXT DEFAULT 'comp';
+ALTER TABLE "PrescricaoPaciente" ADD COLUMN IF NOT EXISTS "volume_frasco_ml" NUMERIC;
+ALTER TABLE "PrescricaoPaciente" ADD COLUMN IF NOT EXISTS "duracao_frasco_dias" INTEGER;
+ALTER TABLE "PrescricaoPaciente" ADD COLUMN IF NOT EXISTS "data_ultimo_frasco" TEXT;
+ALTER TABLE "PrescricaoPaciente" ADD COLUMN IF NOT EXISTS "data_proximo_frasco" TEXT;
+ALTER TABLE "PrescricaoPaciente" ADD COLUMN IF NOT EXISTS "medico_nome" TEXT;
+ALTER TABLE "PrescricaoPaciente" ADD COLUMN IF NOT EXISTS "medico_crm" TEXT;
+ALTER TABLE "PrescricaoPaciente" ADD COLUMN IF NOT EXISTS "motivo_alteracao" TEXT;
+ALTER TABLE "PrescricaoPaciente" ADD COLUMN IF NOT EXISTS "medico_alterou" TEXT;
+ALTER TABLE "PrescricaoPaciente" ADD COLUMN IF NOT EXISTS "data_alteracao" TEXT;
+ALTER TABLE "PrescricaoPaciente" ADD COLUMN IF NOT EXISTS "historico_alteracoes" TEXT;
 ALTER TABLE "PrescricaoPaciente" ADD COLUMN IF NOT EXISTS "created_at" TEXT;
 ALTER TABLE "PrescricaoPaciente" ADD COLUMN IF NOT EXISTS "deleted_at" TEXT;
 
+-- 15. NOTIFICAÇÕES PARA A FARMÁCIA (MÉDICO -> FARMÁCIA)
+CREATE TABLE IF NOT EXISTS "NotificacaoFarmacia" (
+    "id" TEXT PRIMARY KEY,
+    "tipo" TEXT NOT NULL,
+    "pacienteId" TEXT,
+    "pacienteNome" TEXT,
+    "prontuario" TEXT,
+    "alaNome" TEXT,
+    "leito" TEXT,
+    "medicamentoNome" TEXT,
+    "esquemaPosologico" TEXT,
+    "motivo" TEXT,
+    "medicoNome" TEXT,
+    "crm" TEXT,
+    "status" TEXT DEFAULT 'Pendente',
+    "prioridade" TEXT DEFAULT 'Normal',
+    "created_at" TEXT,
+    "deleted_at" TEXT
+);
 
+-- 16. CONTROLE DE VISITAS (RECEPÇÃO & PORTARIA)
+CREATE TABLE IF NOT EXISTS "Visita" (
+    "id" TEXT PRIMARY KEY,
+    "pacienteId" TEXT NOT NULL,
+    "pacienteNome" TEXT NOT NULL,
+    "prontuario" TEXT,
+    "alaNome" TEXT,
+    "leito" TEXT,
+    "visitanteNome" TEXT NOT NULL,
+    "tipoDocumento" TEXT NOT NULL DEFAULT 'RG',
+    "documentoNumero" TEXT NOT NULL,
+    "parentesco" TEXT,
+    "dataHoraEntrada" TEXT NOT NULL,
+    "dataHoraSaida" TEXT,
+    "status" TEXT DEFAULT 'Em Andamento',
+    "observacoes" TEXT,
+    "recepcionista" TEXT,
+    "foto" TEXT,
+    "foto_recusada" BOOLEAN DEFAULT false,
+    "foto_recusada_motivo" TEXT,
+    "created_at" TEXT,
+    "deleted_at" TEXT
+);
+
+ALTER TABLE "Visita" ADD COLUMN IF NOT EXISTS "tipoDocumento" TEXT DEFAULT 'RG';
+ALTER TABLE "Visita" ADD COLUMN IF NOT EXISTS "documentoNumero" TEXT;
+ALTER TABLE "Visita" ADD COLUMN IF NOT EXISTS "parentesco" TEXT;
+ALTER TABLE "Visita" ADD COLUMN IF NOT EXISTS "dataHoraEntrada" TEXT;
+ALTER TABLE "Visita" ADD COLUMN IF NOT EXISTS "dataHoraSaida" TEXT;
+ALTER TABLE "Visita" ADD COLUMN IF NOT EXISTS "status" TEXT DEFAULT 'Em Andamento';
+ALTER TABLE "Visita" ADD COLUMN IF NOT EXISTS "observacoes" TEXT;
+ALTER TABLE "Visita" ADD COLUMN IF NOT EXISTS "recepcionista" TEXT;
+ALTER TABLE "Visita" ADD COLUMN IF NOT EXISTS "foto" TEXT;
+ALTER TABLE "Visita" ADD COLUMN IF NOT EXISTS "foto_recusada" BOOLEAN DEFAULT false;
+ALTER TABLE "Visita" ADD COLUMN IF NOT EXISTS "foto_recusada_motivo" TEXT;
+ALTER TABLE "Visita" ADD COLUMN IF NOT EXISTS "created_at" TEXT;
+ALTER TABLE "Visita" ADD COLUMN IF NOT EXISTS "deleted_at" TEXT;
+
+-- 17. AUDITORIA E TRILHA DE SEGURANÇA
 CREATE TABLE IF NOT EXISTS "Auditoria" (
     "id" TEXT PRIMARY KEY,
-    "acao" TEXT,
+    "acao" TEXT NOT NULL,
     "entidade" TEXT,
     "entidade_id" TEXT,
     "detalhes" TEXT,
@@ -255,6 +428,7 @@ CREATE TABLE IF NOT EXISTS "Auditoria" (
     "deleted_at" TEXT
 );
 
+-- 18. PEDIDOS DA FARMÁCIA SATÉLITE
 CREATE TABLE IF NOT EXISTS "PedidoSatelite" (
     "id" TEXT PRIMARY KEY,
     "codigo" TEXT,
@@ -277,11 +451,13 @@ ALTER TABLE "PedidoSatelite" ADD COLUMN IF NOT EXISTS "data_separacao" TEXT;
 ALTER TABLE "PedidoSatelite" ADD COLUMN IF NOT EXISTS "data_entrega" TEXT;
 ALTER TABLE "PedidoSatelite" ADD COLUMN IF NOT EXISTS "data_recebimento" TEXT;
 ALTER TABLE "PedidoSatelite" ADD COLUMN IF NOT EXISTS "observacao" TEXT;
+ALTER TABLE "PedidoSatelite" ADD COLUMN IF NOT EXISTS "prioridade" TEXT DEFAULT 'Normal';
 ALTER TABLE "PedidoSatelite" ADD COLUMN IF NOT EXISTS "margem_seguranca" INTEGER DEFAULT 0;
 ALTER TABLE "PedidoSatelite" ADD COLUMN IF NOT EXISTS "descontar_estoque" INTEGER DEFAULT 0;
 ALTER TABLE "PedidoSatelite" ADD COLUMN IF NOT EXISTS "motivo_cancelamento" TEXT;
 ALTER TABLE "PedidoSatelite" ADD COLUMN IF NOT EXISTS "data_cancelamento" TEXT;
 
+-- 19. TRANSFERÊNCIA PENDENTE ENTRE ESTOQUES
 CREATE TABLE IF NOT EXISTS "TransferenciaPendente" (
     "id" TEXT PRIMARY KEY,
     "medicamento_id" TEXT,
@@ -296,6 +472,7 @@ CREATE TABLE IF NOT EXISTS "TransferenciaPendente" (
     "deleted_at" TEXT
 );
 
+-- 20. USUÁRIOS E CORPO CLÍNICO (COM CRM, COREN, CRF)
 CREATE TABLE IF NOT EXISTS "Usuario" (
     "id" TEXT PRIMARY KEY,
     "nome" TEXT,
@@ -303,155 +480,183 @@ CREATE TABLE IF NOT EXISTS "Usuario" (
     "senha" TEXT,
     "coren" TEXT,
     "crf" TEXT,
+    "crm" TEXT,
+    "especialidade" TEXT,
     "perfil" TEXT,
+    "primeiro_acesso" BOOLEAN DEFAULT true,
     "created_at" TEXT,
     "deleted_at" TEXT
 );
 
--- Tentar adicionar as colunas caso a tabela já tenha sido criada antes
 ALTER TABLE "Usuario" ADD COLUMN IF NOT EXISTS "coren" TEXT;
 ALTER TABLE "Usuario" ADD COLUMN IF NOT EXISTS "crf" TEXT;
+ALTER TABLE "Usuario" ADD COLUMN IF NOT EXISTS "crm" TEXT;
+ALTER TABLE "Usuario" ADD COLUMN IF NOT EXISTS "especialidade" TEXT;
+ALTER TABLE "Usuario" ADD COLUMN IF NOT EXISTS "primeiro_acesso" BOOLEAN DEFAULT true;
+ALTER TABLE "Usuario" ADD COLUMN IF NOT EXISTS "status_online" TEXT DEFAULT 'offline';
+ALTER TABLE "Usuario" ADD COLUMN IF NOT EXISTS "ultimo_acesso" TEXT;
+ALTER TABLE "Usuario" ADD COLUMN IF NOT EXISTS "modulo_ativo" TEXT;
+ALTER TABLE "Usuario" ADD COLUMN IF NOT EXISTS "email" TEXT;
+ALTER TABLE "Usuario" ADD COLUMN IF NOT EXISTS "telefone" TEXT;
+ALTER TABLE "Usuario" ADD COLUMN IF NOT EXISTS "certificado_digital_nome" TEXT;
+ALTER TABLE "Usuario" ADD COLUMN IF NOT EXISTS "certificado_digital_dados" TEXT;
+ALTER TABLE "Usuario" ADD COLUMN IF NOT EXISTS "certificado_digital_expiracao" TEXT;
+ALTER TABLE "Usuario" ADD COLUMN IF NOT EXISTS "certificado_digital_emissor" TEXT;
+ALTER TABLE "Usuario" ADD COLUMN IF NOT EXISTS "certificado_digital_cpf" TEXT;
 
--- Inserindo usuário administrador padrão (senha: admin123)
-INSERT INTO "Usuario" ("id", "nome", "login", "senha", "perfil") 
-VALUES ('user-admin-uuid', 'Administrador', 'admin', 'admin123', 'admin')
+-- Suporte ao Modo Híbrido de Assinatura Digital de Prescrições
+ALTER TABLE "PrescricaoPaciente" ADD COLUMN IF NOT EXISTS "tipo_assinatura" TEXT DEFAULT 'login_crm';
+ALTER TABLE "PrescricaoPaciente" ADD COLUMN IF NOT EXISTS "assinatura_digital_hash" TEXT;
+ALTER TABLE "PrescricaoPaciente" ADD COLUMN IF NOT EXISTS "assinatura_digital_data" TEXT;
+ALTER TABLE "PrescricaoPaciente" ADD COLUMN IF NOT EXISTS "assinatura_digital_medico" TEXT;
+ALTER TABLE "PrescricaoPaciente" ADD COLUMN IF NOT EXISTS "assinatura_digital_crm" TEXT;
+ALTER TABLE "PrescricaoPaciente" ADD COLUMN IF NOT EXISTS "assinatura_digital_emissor" TEXT;
+
+-- Usuário Administrador padrão de fábrica (senha: admin123)
+INSERT INTO "Usuario" ("id", "nome", "login", "senha", "perfil", "primeiro_acesso") 
+VALUES ('user-admin-uuid', 'Administrador', 'admin', 'admin123', 'admin', false)
 ON CONFLICT DO NOTHING;
 
--- Garantir as colunas em tabelas vitais
-ALTER TABLE "Entrada" ADD COLUMN IF NOT EXISTS "numero_lote" TEXT;
-ALTER TABLE "Entrada" ADD COLUMN IF NOT EXISTS "data_validade" TEXT;
-ALTER TABLE "Entrada" ADD COLUMN IF NOT EXISTS "fornecedor_nome" TEXT;
-ALTER TABLE "Entrada" ADD COLUMN IF NOT EXISTS "numero_nota_fiscal" TEXT;
-ALTER TABLE "Entrada" ADD COLUMN IF NOT EXISTS "tipo" TEXT;
-ALTER TABLE "Entrada" ADD COLUMN IF NOT EXISTS "medicamento_nome" TEXT;
-ALTER TABLE "Entrada" ADD COLUMN IF NOT EXISTS "data_entrada" TEXT;
-
-ALTER TABLE "PedidoSatelite" ADD COLUMN IF NOT EXISTS "data_separacao" TEXT;
-ALTER TABLE "PedidoSatelite" ADD COLUMN IF NOT EXISTS "data_entrega" TEXT;
-ALTER TABLE "PedidoSatelite" ADD COLUMN IF NOT EXISTS "data_recebimento" TEXT;
-ALTER TABLE "PedidoSatelite" ADD COLUMN IF NOT EXISTS "observacao" TEXT;
-
--- ==========================================
--- ALTERAÇÕES PARA FRACIONAMENTO E PORTARIA 344
--- ==========================================
-
--- 1. Ligação de Pai/Filho no Medicamento (Para o Fracionamento)
-ALTER TABLE "Medicamento" ADD COLUMN IF NOT EXISTS "medicamento_origem_id" TEXT;
-ALTER TABLE "Medicamento" ADD COLUMN IF NOT EXISTS "fator_fracionamento" INTEGER DEFAULT 0;
-
--- 2. Tabela da "Gaveta do Paciente" (Estoque Nominal de Metadinhas)
-CREATE TABLE IF NOT EXISTS "GavetaPaciente" (
-    "id" TEXT PRIMARY KEY,
-    "paciente_id" TEXT,
-    "medicamento_id" TEXT,
-    "lote_id" TEXT,
-    "quantidade" INTEGER,
-    "created_at" TEXT,
-    "deleted_at" TEXT
-);
-
--- ==========================================
--- 3. TABELA DE CONTROLE DE VISITAS
--- ==========================================
-CREATE TABLE IF NOT EXISTS "Visita" (
-    "id" TEXT PRIMARY KEY,
-    "pacienteId" TEXT NOT NULL,
-    "pacienteNome" TEXT NOT NULL,
-    "prontuario" TEXT,
-    "alaNome" TEXT,
-    "leito" TEXT,
-    "visitanteNome" TEXT NOT NULL,
-    "tipoDocumento" TEXT NOT NULL DEFAULT 'RG', -- 'RG' ou 'CPF'
-    "documentoNumero" TEXT NOT NULL,
-    "parentesco" TEXT,
-    "dataHoraEntrada" TEXT NOT NULL,
-    "dataHoraSaida" TEXT,
-    "status" TEXT DEFAULT 'Em Andamento',       -- 'Em Andamento' ou 'Concluída'
-    "observacoes" TEXT,
-    "recepcionista" TEXT,
-    "created_at" TEXT,
-    "deleted_at" TEXT
-);
-
-ALTER TABLE "Visita" ADD COLUMN IF NOT EXISTS "tipoDocumento" TEXT DEFAULT 'RG';
-ALTER TABLE "Visita" ADD COLUMN IF NOT EXISTS "documentoNumero" TEXT;
-ALTER TABLE "Visita" ADD COLUMN IF NOT EXISTS "parentesco" TEXT;
-ALTER TABLE "Visita" ADD COLUMN IF NOT EXISTS "dataHoraEntrada" TEXT;
-ALTER TABLE "Visita" ADD COLUMN IF NOT EXISTS "dataHoraSaida" TEXT;
-ALTER TABLE "Visita" ADD COLUMN IF NOT EXISTS "status" TEXT DEFAULT 'Em Andamento';
-ALTER TABLE "Visita" ADD COLUMN IF NOT EXISTS "observacoes" TEXT;
-ALTER TABLE "Visita" ADD COLUMN IF NOT EXISTS "recepcionista" TEXT;
-ALTER TABLE "Visita" ADD COLUMN IF NOT EXISTS "foto" TEXT;
-ALTER TABLE "Visita" ADD COLUMN IF NOT EXISTS "foto_recusada" BOOLEAN DEFAULT false;
-ALTER TABLE "Visita" ADD COLUMN IF NOT EXISTS "foto_recusada_motivo" TEXT;
-ALTER TABLE "Visita" ADD COLUMN IF NOT EXISTS "created_at" TEXT;
-ALTER TABLE "Visita" ADD COLUMN IF NOT EXISTS "deleted_at" TEXT;
-
--- ==========================================
--- CAPACIDADES OFICIAIS DE LEITOS POR ALA
--- ==========================================
--- N1: 39 leitos
-UPDATE "Ala" SET "leitos" = 39 WHERE LOWER(TRIM("nome")) IN ('n1', 'ala n1', 'ala-n1');
-INSERT INTO "Ala" ("id", "nome", "descricao", "leitos", "created_at")
-SELECT 'ala-n1-uuid', 'N1', 'Ala N1 (39 leitos)', 39, NOW()
-WHERE NOT EXISTS (SELECT 1 FROM "Ala" WHERE LOWER(TRIM("nome")) IN ('n1', 'ala n1', 'ala-n1') AND deleted_at IS NULL);
-
--- N2: 39 leitos
-UPDATE "Ala" SET "leitos" = 39 WHERE LOWER(TRIM("nome")) IN ('n2', 'ala n2', 'ala-n2');
-INSERT INTO "Ala" ("id", "nome", "descricao", "leitos", "created_at")
-SELECT 'ala-n2-uuid', 'N2', 'Ala N2 (39 leitos)', 39, NOW()
-WHERE NOT EXISTS (SELECT 1 FROM "Ala" WHERE LOWER(TRIM("nome")) IN ('n2', 'ala n2', 'ala-n2') AND deleted_at IS NULL);
-
--- R1 M: 10 leitos
-UPDATE "Ala" SET "leitos" = 10 WHERE LOWER(TRIM("nome")) IN ('r1 m', 'r1-m', 'r1m', 'r1 masculino', 'ala r1 m', 'ala r1 masculino');
-INSERT INTO "Ala" ("id", "nome", "descricao", "leitos", "created_at")
-SELECT 'ala-r1m-uuid', 'R1 M', 'Ala R1 Masculino (10 leitos)', 10, NOW()
-WHERE NOT EXISTS (SELECT 1 FROM "Ala" WHERE LOWER(TRIM("nome")) IN ('r1 m', 'r1-m', 'r1m', 'r1 masculino', 'ala r1 m', 'ala r1 masculino') AND deleted_at IS NULL);
-
--- R1 F: 15 leitos
-UPDATE "Ala" SET "leitos" = 15 WHERE LOWER(TRIM("nome")) IN ('r1 f', 'r1-f', 'r1f', 'r1 feminino', 'ala r1 f', 'ala r1 feminino');
-INSERT INTO "Ala" ("id", "nome", "descricao", "leitos", "created_at")
-SELECT 'ala-r1f-uuid', 'R1 F', 'Ala R1 Feminino (15 leitos)', 15, NOW()
-WHERE NOT EXISTS (SELECT 1 FROM "Ala" WHERE LOWER(TRIM("nome")) IN ('r1 f', 'r1-f', 'r1f', 'r1 feminino', 'ala r1 f', 'ala r1 feminino') AND deleted_at IS NULL);
-
--- UCP: 10 leitos
-UPDATE "Ala" SET "leitos" = 10 WHERE LOWER(TRIM("nome")) IN ('ucp', 'ala ucp');
-INSERT INTO "Ala" ("id", "nome", "descricao", "leitos", "created_at")
-SELECT 'ala-ucp-uuid', 'UCP', 'Unidade de Cuidados Prolongados (10 leitos)', 10, NOW()
-WHERE NOT EXISTS (SELECT 1 FROM "Ala" WHERE LOWER(TRIM("nome")) IN ('ucp', 'ala ucp') AND deleted_at IS NULL);
-
--- CL1: 10 leitos
-UPDATE "Ala" SET "leitos" = 10 WHERE LOWER(TRIM("nome")) IN ('cl1', 'cl 1', 'ala cl1', 'ala cl 1', 'clinica 1');
-INSERT INTO "Ala" ("id", "nome", "descricao", "leitos", "created_at")
-SELECT 'ala-cl1-uuid', 'CL1', 'Ala Clínica 1 (10 leitos)', 10, NOW()
-WHERE NOT EXISTS (SELECT 1 FROM "Ala" WHERE LOWER(TRIM("nome")) IN ('cl1', 'cl 1', 'ala cl1', 'ala cl 1', 'clinica 1') AND deleted_at IS NULL);
-
--- CL2: 10 leitos
-UPDATE "Ala" SET "leitos" = 10 WHERE LOWER(TRIM("nome")) IN ('cl2', 'cl 2', 'ala cl2', 'ala cl 2', 'clinica 2');
-INSERT INTO "Ala" ("id", "nome", "descricao", "leitos", "created_at")
-SELECT 'ala-cl2-uuid', 'CL2', 'Ala Clínica 2 (10 leitos)', 10, NOW()
-WHERE NOT EXISTS (SELECT 1 FROM "Ala" WHERE LOWER(TRIM("nome")) IN ('cl2', 'cl 2', 'ala cl2', 'ala cl 2', 'clinica 2') AND deleted_at IS NULL);
-
--- CASA MENINOS: 3 leitos
-UPDATE "Ala" SET "leitos" = 3 WHERE LOWER(TRIM("nome")) IN ('casa meninos', 'casa dos meninos', 'ala casa meninos', 'ala casa dos meninos');
-INSERT INTO "Ala" ("id", "nome", "descricao", "leitos", "created_at")
-SELECT 'ala-casameninos-uuid', 'Casa Meninos', 'Casa dos Meninos (3 leitos)', 3, NOW()
-WHERE NOT EXISTS (SELECT 1 FROM "Ala" WHERE LOWER(TRIM("nome")) IN ('casa meninos', 'casa dos meninos', 'ala casa meninos', 'ala casa dos meninos') AND deleted_at IS NULL);
-
--- ==============================================================================
--- CHAT ZORION (Comunicação em Tempo Real entre Módulos)
--- ==============================================================================
+-- 21. CHAT ZORION (COMUNICAÇÃO MULTI-MÓDULOS)
 CREATE TABLE IF NOT EXISTS "ChatMessage" (
     "id" TEXT PRIMARY KEY,
     "canal" TEXT DEFAULT 'farmacia_recepcao',
+    "remetente_id" TEXT,
     "remetente_modulo" TEXT NOT NULL,
     "remetente_usuario" TEXT NOT NULL,
     "remetente_cargo" TEXT,
+    "destinatario_id" TEXT,
+    "destinatario_nome" TEXT,
     "mensagem" TEXT NOT NULL,
     "lida" BOOLEAN DEFAULT false,
     "created_at" TEXT NOT NULL,
     "deleted_at" TEXT
 );
 
+ALTER TABLE "ChatMessage" ADD COLUMN IF NOT EXISTS "remetente_id" TEXT;
+ALTER TABLE "ChatMessage" ADD COLUMN IF NOT EXISTS "destinatario_id" TEXT;
+ALTER TABLE "ChatMessage" ADD COLUMN IF NOT EXISTS "destinatario_nome" TEXT;
+
 CREATE INDEX IF NOT EXISTS "idx_chat_canal_created" ON "ChatMessage" ("canal", "created_at");
 
+-- 22. PRONTUÁRIO CLÍNICO MULTI-DISCIPLINAR (EVOLUÇÕES, EXAMES, ALERGIAS, DOCUMENTOS)
+CREATE TABLE IF NOT EXISTS "ProntuarioEvolucao" (
+    "id" TEXT PRIMARY KEY,
+    "paciente_id" TEXT NOT NULL,
+    "tipo" TEXT DEFAULT 'Evolução Médica',
+    "titulo" TEXT,
+    "descricao" TEXT NOT NULL,
+    "conduta" TEXT,
+    "pressao_arterial" TEXT,
+    "frequencia_cardiaca" TEXT,
+    "temperatura" TEXT,
+    "saturacao_o2" TEXT,
+    "glicemia" TEXT,
+    "profissional_nome" TEXT,
+    "profissional_cargo" TEXT,
+    "profissional_crm" TEXT,
+    "data_hora" TEXT NOT NULL,
+    "created_at" TEXT NOT NULL,
+    "deleted_at" TEXT
+);
+
+CREATE TABLE IF NOT EXISTS "ProntuarioExame" (
+    "id" TEXT PRIMARY KEY,
+    "paciente_id" TEXT NOT NULL,
+    "tipo" TEXT DEFAULT 'Laboratorial',
+    "nome_exame" TEXT NOT NULL,
+    "data_solicitacao" TEXT NOT NULL,
+    "data_resultado" TEXT,
+    "status" TEXT DEFAULT 'Concluído',
+    "resultado" TEXT,
+    "valores_referencia" TEXT,
+    "solicitante_nome" TEXT,
+    "laudo_medico" TEXT,
+    "created_at" TEXT NOT NULL,
+    "deleted_at" TEXT
+);
+
+CREATE TABLE IF NOT EXISTS "ProntuarioAlergia" (
+    "id" TEXT PRIMARY KEY,
+    "paciente_id" TEXT NOT NULL,
+    "agente" TEXT NOT NULL,
+    "tipo" TEXT DEFAULT 'Medicamentosa',
+    "gravidade" TEXT DEFAULT 'Grave',
+    "reacao" TEXT,
+    "registrado_por" TEXT,
+    "data_registro" TEXT NOT NULL,
+    "created_at" TEXT NOT NULL,
+    "deleted_at" TEXT
+);
+
+CREATE TABLE IF NOT EXISTS "ProntuarioDocumento" (
+    "id" TEXT PRIMARY KEY,
+    "paciente_id" TEXT NOT NULL,
+    "titulo" TEXT NOT NULL,
+    "categoria" TEXT DEFAULT 'Relatório Médico',
+    "conteudo" TEXT NOT NULL,
+    "responsavel_nome" TEXT,
+    "responsavel_cargo" TEXT,
+    "data_emissao" TEXT NOT NULL,
+    "created_at" TEXT NOT NULL,
+    "deleted_at" TEXT
+);
+
+ALTER TABLE "Paciente" ADD COLUMN IF NOT EXISTS "diagnostico" TEXT;
+ALTER TABLE "Paciente" ADD COLUMN IF NOT EXISTS "alergias" TEXT;
+
+CREATE INDEX IF NOT EXISTS "idx_prontuario_evolucao_paciente" ON "ProntuarioEvolucao" ("paciente_id", "data_hora");
+CREATE INDEX IF NOT EXISTS "idx_prontuario_exame_paciente" ON "ProntuarioExame" ("paciente_id", "data_solicitacao");
+CREATE INDEX IF NOT EXISTS "idx_prontuario_alergia_paciente" ON "ProntuarioAlergia" ("paciente_id");
+CREATE INDEX IF NOT EXISTS "idx_prontuario_documento_paciente" ON "ProntuarioDocumento" ("paciente_id", "data_emissao");
+
+-- ==============================================================================
+-- CAPACIDADES OFICIAIS DE LEITOS POR ALA
+-- ==============================================================================
+-- N1: 39 leitos
+UPDATE "Ala" SET "leitos" = 39 WHERE LOWER(TRIM("nome")) IN ('n1', 'ala n1', 'ala-n1');
+INSERT INTO "Ala" ("id", "nome", "descricao", "leitos")
+SELECT 'ala-n1-uuid', 'N1', 'Ala N1 (39 leitos)', 39
+WHERE NOT EXISTS (SELECT 1 FROM "Ala" WHERE LOWER(TRIM("nome")) IN ('n1', 'ala n1', 'ala-n1') AND deleted_at IS NULL);
+
+-- N2: 39 leitos
+UPDATE "Ala" SET "leitos" = 39 WHERE LOWER(TRIM("nome")) IN ('n2', 'ala n2', 'ala-n2');
+INSERT INTO "Ala" ("id", "nome", "descricao", "leitos")
+SELECT 'ala-n2-uuid', 'N2', 'Ala N2 (39 leitos)', 39
+WHERE NOT EXISTS (SELECT 1 FROM "Ala" WHERE LOWER(TRIM("nome")) IN ('n2', 'ala n2', 'ala-n2') AND deleted_at IS NULL);
+
+-- R1 M: 10 leitos
+UPDATE "Ala" SET "leitos" = 10 WHERE LOWER(TRIM("nome")) IN ('r1 m', 'r1-m', 'r1m', 'r1 masculino', 'ala r1 m', 'ala r1 masculino');
+INSERT INTO "Ala" ("id", "nome", "descricao", "leitos")
+SELECT 'ala-r1m-uuid', 'R1 M', 'Ala R1 Masculino (10 leitos)', 10
+WHERE NOT EXISTS (SELECT 1 FROM "Ala" WHERE LOWER(TRIM("nome")) IN ('r1 m', 'r1-m', 'r1m', 'r1 masculino', 'ala r1 m', 'ala r1 masculino') AND deleted_at IS NULL);
+
+-- R1 F: 15 leitos
+UPDATE "Ala" SET "leitos" = 15 WHERE LOWER(TRIM("nome")) IN ('r1 f', 'r1-f', 'r1f', 'r1 feminino', 'ala r1 f', 'ala r1 feminino');
+INSERT INTO "Ala" ("id", "nome", "descricao", "leitos")
+SELECT 'ala-r1f-uuid', 'R1 F', 'Ala R1 Feminino (15 leitos)', 15
+WHERE NOT EXISTS (SELECT 1 FROM "Ala" WHERE LOWER(TRIM("nome")) IN ('r1 f', 'r1-f', 'r1f', 'r1 feminino', 'ala r1 f', 'ala r1 feminino') AND deleted_at IS NULL);
+
+-- UCP: 10 leitos
+UPDATE "Ala" SET "leitos" = 10 WHERE LOWER(TRIM("nome")) IN ('ucp', 'ala ucp');
+INSERT INTO "Ala" ("id", "nome", "descricao", "leitos")
+SELECT 'ala-ucp-uuid', 'UCP', 'Unidade de Cuidados Prolongados (10 leitos)', 10
+WHERE NOT EXISTS (SELECT 1 FROM "Ala" WHERE LOWER(TRIM("nome")) IN ('ucp', 'ala ucp') AND deleted_at IS NULL);
+
+-- CL1: 10 leitos
+UPDATE "Ala" SET "leitos" = 10 WHERE LOWER(TRIM("nome")) IN ('cl1', 'cl 1', 'ala cl1', 'ala cl 1', 'clinica 1');
+INSERT INTO "Ala" ("id", "nome", "descricao", "leitos")
+SELECT 'ala-cl1-uuid', 'CL1', 'Ala Clínica 1 (10 leitos)', 10
+WHERE NOT EXISTS (SELECT 1 FROM "Ala" WHERE LOWER(TRIM("nome")) IN ('cl1', 'cl 1', 'ala cl1', 'ala cl 1', 'clinica 1') AND deleted_at IS NULL);
+
+-- CL2: 10 leitos
+UPDATE "Ala" SET "leitos" = 10 WHERE LOWER(TRIM("nome")) IN ('cl2', 'cl 2', 'ala cl2', 'ala cl 2', 'clinica 2');
+INSERT INTO "Ala" ("id", "nome", "descricao", "leitos")
+SELECT 'ala-cl2-uuid', 'CL2', 'Ala Clínica 2 (10 leitos)', 10
+WHERE NOT EXISTS (SELECT 1 FROM "Ala" WHERE LOWER(TRIM("nome")) IN ('cl2', 'cl 2', 'ala cl2', 'ala cl 2', 'clinica 2') AND deleted_at IS NULL);
+
+-- CASA MENINOS: 3 leitos
+UPDATE "Ala" SET "leitos" = 3 WHERE LOWER(TRIM("nome")) IN ('casa meninos', 'casa dos meninos', 'ala casa meninos', 'ala casa dos meninos');
+INSERT INTO "Ala" ("id", "nome", "descricao", "leitos")
+SELECT 'ala-casameninos-uuid', 'Casa Meninos', 'Casa dos Meninos (3 leitos)', 3
+WHERE NOT EXISTS (SELECT 1 FROM "Ala" WHERE LOWER(TRIM("nome")) IN ('casa meninos', 'casa dos meninos', 'ala casa meninos', 'ala casa dos meninos') AND deleted_at IS NULL);

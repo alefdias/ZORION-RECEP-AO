@@ -8,11 +8,13 @@ import {
   HeartHandshake, 
   Activity, 
   LogOut,
-  UserCheck
+  UserCheck,
+  Settings
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { ServerConnectionBadge } from "@/components/ServerConnectionBadge";
 import { PatientModal } from "@/components/PatientModal";
+import { ConfiguracoesRecepcaoModal } from "@/components/ConfiguracoesRecepcaoModal";
 import { RecepcaoDashboard } from "@/pages/RecepcaoDashboard";
 import { PacientesList } from "@/pages/PacientesList";
 import { VisitasManager } from "@/pages/VisitasManager";
@@ -39,6 +41,7 @@ export function App() {
   // Modais de Controle
   const [patientModalOpen, setPatientModalOpen] = useState(false);
   const [patientToEdit, setPatientToEdit] = useState(null);
+  const [configModalOpen, setConfigModalOpen] = useState(false);
 
   // Listener em tempo real contínuo (PostgreSQL LISTEN / NOTIFY via Rust/Tauri)
   useEffect(() => {
@@ -204,20 +207,25 @@ export function App() {
               <span className="sm:hidden">Novo</span>
             </Button>
 
-            {/* Usuário Logado */}
-            <div className="hidden lg:flex items-center gap-2 pl-2 border-l border-slate-200">
+            {/* Usuário Logado & Configurações */}
+            <button
+              onClick={() => setConfigModalOpen(true)}
+              title="Configurações e Meu Perfil"
+              className="hidden lg:flex items-center gap-2 pl-2 pr-2.5 py-1 rounded-xl border border-slate-200 hover:border-sky-300 hover:bg-sky-50/50 transition-all cursor-pointer group"
+            >
               <div className="w-8 h-8 rounded-full bg-gradient-to-tr from-sky-600 to-cyan-500 text-white flex items-center justify-center font-bold text-xs shadow-xs">
                 {currentUser.nome ? currentUser.nome.charAt(0).toUpperCase() : "U"}
               </div>
               <div className="text-left leading-tight pr-1">
-                <div className="font-bold text-slate-800 text-xs truncate max-w-[120px]" title={currentUser.nome}>
+                <div className="font-bold text-slate-800 text-xs truncate max-w-[120px] group-hover:text-sky-700 transition-colors" title={currentUser.nome}>
                   {currentUser.nome || "Usuário"}
                 </div>
                 <div className="text-[10px] text-slate-500 capitalize">
                   {currentUser.cargo || "Recepção"}
                 </div>
               </div>
-            </div>
+              <Settings className="w-3.5 h-3.5 text-slate-400 group-hover:text-sky-600 transition-colors" />
+            </button>
 
             {/* Botão Trocar Módulo / Sair */}
             <button
@@ -313,6 +321,13 @@ export function App() {
         alas={alas}
         allPatients={patients}
         onSaved={handleRefreshAll}
+      />
+
+      <ConfiguracoesRecepcaoModal
+        open={configModalOpen}
+        onOpenChange={setConfigModalOpen}
+        currentUser={currentUser}
+        onUserUpdated={(u) => setCurrentUser(u)}
       />
 
       {/* Rodapé */}

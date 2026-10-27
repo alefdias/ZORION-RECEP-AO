@@ -1,3 +1,4 @@
+import { normalizeSearch } from "@/utils/searchUtils";
 import * as React from "react"
 import { Check, ChevronsUpDown, User } from "lucide-react"
 import { cn } from "@/lib/utils"

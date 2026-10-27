@@ -153,6 +153,8 @@ export async function ensureRecepcaoTables() {
     ALTER TABLE "Usuario" ADD COLUMN IF NOT EXISTS "coren" TEXT;
     ALTER TABLE "Usuario" ADD COLUMN IF NOT EXISTS "crf" TEXT;
     ALTER TABLE "Usuario" ADD COLUMN IF NOT EXISTS "primeiro_acesso" BOOLEAN DEFAULT true;
+    ALTER TABLE "Usuario" ADD COLUMN IF NOT EXISTS "email" TEXT;
+    ALTER TABLE "Usuario" ADD COLUMN IF NOT EXISTS "telefone" TEXT;
     INSERT INTO "Usuario" ("id", "nome", "login", "senha", "perfil", "primeiro_acesso") 
     VALUES ('user-admin-uuid', 'Administrador RT', 'admin', 'admin123', 'admin', false)
     ON CONFLICT DO NOTHING;
@@ -486,10 +488,36 @@ export const UsuarioService = {
     }
   },
 
+  async get(id) {
+    await ensureRecepcaoTables();
+    try {
+      const q = `SELECT * FROM "Usuario" WHERE "id" = '${id.replace(/'/g, "''")}' LIMIT 1;`;
+      const res = await queryPostgres(q);
+      return res?.[0] || null;
+    } catch {
+      return null;
+    }
+  },
+
   async updatePassword(userId, newPassword) {
     const safePass = newPassword.replace(/'/g, "''");
     const q = `UPDATE "Usuario" SET "senha" = '${safePass}', "primeiro_acesso" = false WHERE "id" = '${userId}';`;
     await executePostgres(q);
+  },
+
+  async updateProfile(id, { nome, email, telefone, senha = null }) {
+    await ensureRecepcaoTables();
+    let sets = [];
+    if (nome) sets.push(`"nome" = '${nome.replace(/'/g, "''")}'`);
+    if (email !== undefined) sets.push(`"email" = '${(email || '').replace(/'/g, "''")}'`);
+    if (telefone !== undefined) sets.push(`"telefone" = '${(telefone || '').replace(/'/g, "''")}'`);
+    if (senha) sets.push(`"senha" = '${senha.replace(/'/g, "''")}'`);
+    
+    if (sets.length > 0) {
+      const q = `UPDATE "Usuario" SET ${sets.join(', ')} WHERE "id" = '${id.replace(/'/g, "''")}';`;
+      await executePostgres(q);
+    }
+    return await this.get(id);
   }
 };
 
