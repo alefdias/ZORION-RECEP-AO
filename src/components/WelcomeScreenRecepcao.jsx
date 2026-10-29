@@ -321,7 +321,7 @@ export function WelcomeScreenRecepcao({ onEnter }) {
         position: "fixed",
         inset: 0,
         zIndex: 9998,
-        background: "linear-gradient(145deg, #f8fafc 0%, #f0f9ff 45%, #e0f2fe 100%)",
+        background: "linear-gradient(145deg, #f1f5f9 0%, #e2e8f0 45%, #cbd5e1 100%)",
         display: "flex",
         flexDirection: "column",
         alignItems: "center",
@@ -341,7 +341,7 @@ export function WelcomeScreenRecepcao({ onEnter }) {
           right: 0,
           bottom: 0,
           pointerEvents: "none",
-          background: `radial-gradient(650px circle at ${mousePos.x}px ${mousePos.y}px, rgba(2, 132, 199, 0.08), transparent 45%)`,
+          background: `radial-gradient(650px circle at ${mousePos.x}px ${mousePos.y}px, rgba(30, 58, 138, 0.15), transparent 45%)`,
           zIndex: 0,
           transition: "background 0.15s ease-out"
         }}
@@ -371,15 +371,15 @@ export function WelcomeScreenRecepcao({ onEnter }) {
           justifyContent: "center",
           gap: 6
         }}>
-          <span style={{ color: "#0284c7" }}>ZORION</span>
-          <span style={{ color: "#0f172a", fontWeight: 900 }}>SAÚDE</span>
+          <span style={{ color: "#1e3a8a" }}>ZORION</span>
+          <span style={{ color: "#090e17", fontWeight: 900 }}>SAÚDE</span>
         </h1>
 
         <span
           style={{
             fontSize: 11,
             fontWeight: 700,
-            color: "#0369a1",
+            color: "#1d4ed8",
             letterSpacing: 2.5,
             textTransform: "uppercase",
             display: "flex",
