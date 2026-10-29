@@ -17,6 +17,10 @@ on:
 permissions:
   contents: write
 
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: false
+
 jobs:
   build-windows:
     name: 'Compilar Windows (.exe)'
@@ -47,7 +51,7 @@ jobs:
       - name: Install Frontend Dependencies
         run: npm install
 
-      - name: Read Version
+      - name: Identificar e Sincronizar Versões
         id: app_info
         shell: bash
         run: |
@@ -60,6 +64,24 @@ jobs:
           echo "VERSION=$VERSION" >> $GITHUB_OUTPUT
           echo "TAG_NAME=$TAG_NAME" >> $GITHUB_OUTPUT
           echo "Compilando versao: $VERSION (Tag: $TAG_NAME)"
+
+          # Garante que tauri.conf.json e Cargo.toml fiquem rigorosamente na mesma versao antes do build
+          node -e "
+            const fs = require('fs');
+            try {
+              const tauriConfPath = 'src-tauri/tauri.conf.json';
+              const tauriConf = JSON.parse(fs.readFileSync(tauriConfPath, 'utf8'));
+              tauriConf.version = '$VERSION';
+              fs.writeFileSync(tauriConfPath, JSON.stringify(tauriConf, null, 2) + '\n');
+            } catch (e) { console.warn('Aviso tauri.conf:', e.message); }
+            
+            try {
+              const cargoPath = 'src-tauri/Cargo.toml';
+              let cargo = fs.readFileSync(cargoPath, 'utf8');
+              cargo = cargo.replace(/^version\s*=\s*\"[^\"]+\"/m, 'version = \"$VERSION\"');
+              fs.writeFileSync(cargoPath, cargo);
+            } catch (e) { console.warn('Aviso Cargo.toml:', e.message); }
+          "
 
       - name: Build Tauri App (.exe and installers)
         run: npm run tauri:build
@@ -93,6 +115,19 @@ jobs:
           echo "=== 3. Executável Portátil Standalone ==="
           if [ -f "src-tauri/target/release/zorion-recepcao.exe" ]; then
             cp "src-tauri/target/release/zorion-recepcao.exe" "release-artifacts/Zorion-Recepcao-v${VERSION}-Portatil.exe"
+          elif [ -f "src-tauri/target/release/Zorion Recepção.exe" ]; then
+            cp "src-tauri/target/release/Zorion Recepção.exe" "release-artifacts/Zorion-Recepcao-v${VERSION}-Portatil.exe"
+          else
+            for exe in src-tauri/target/release/*.exe; do
+              if [ -f "$exe" ]; then
+                bname=$(basename "$exe")
+                if [[ "$bname" != build_script_* ]] && [[ "$bname" != *.d ]]; then
+                  echo "Copiando executável standalone: $exe"
+                  cp "$exe" "release-artifacts/Zorion-Recepcao-v${VERSION}-Portatil.exe"
+                  break
+                fi
+              fi
+            done
           fi
 
           echo "=== 4. Checksums SHA256 ==="
@@ -128,6 +163,7 @@ jobs:
           make_latest: true
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        continue-on-error: true
 
       - name: Upload Windows Artifacts (Fallback)
         uses: actions/upload-artifact@v4

@@ -105,12 +105,7 @@ export function PatientModal({ open, onOpenChange, patient = null, alas = [], al
       return;
     }
 
-    if (!formData.prontuario.trim()) {
-      toast.error("O número do prontuário é obrigatório.");
-      return;
-    }
-
-    if (prontuarioCheck.duplicateActive) {
+    if (formData.prontuario.trim() && prontuarioCheck.duplicateActive) {
       toast.error("Prontuário já cadastrado para um paciente ativo no hospital!");
       return;
     }
@@ -183,16 +178,18 @@ export function PatientModal({ open, onOpenChange, patient = null, alas = [], al
 
           {/* Identificação de Prontuário */}
           <div>
-            <Label className="text-xs font-semibold text-slate-700 flex items-center gap-1.5">
-              <FileText className="w-3.5 h-3.5 text-sky-600" />
-              Número do Prontuário *
+            <Label className="text-xs font-semibold text-slate-700 flex items-center justify-between">
+              <span className="flex items-center gap-1.5">
+                <FileText className="w-3.5 h-3.5 text-sky-600" />
+                Número do Prontuário
+              </span>
+              <span className="text-[11px] font-normal text-slate-400 bg-slate-100 px-2 py-0.5 rounded-full">Opcional</span>
             </Label>
             <Input
               value={formData.prontuario}
               onChange={(e) => setFormData(prev => ({ ...prev, prontuario: e.target.value }))}
-              placeholder="Ex: 2026-0984 ou PR-1049"
+              placeholder="Ex: 2026-0984 ou PR-1049 (opcional)"
               className="mt-1 font-mono uppercase text-sm font-medium"
-              required
             />
 
             {/* Aviso de duplicidade ativa */}
