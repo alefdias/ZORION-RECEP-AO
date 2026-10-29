@@ -1,0 +1,581 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Zorion Hospitalar — Relatório de Atendimento e Triagem</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@300;400;500;600;700;800&family=JetBrains+Mono:wght@400;600&display=swap" rel="stylesheet">
+  
+  <style>
+    :root {
+      --primary: #0284c7;
+      --primary-dark: #0369a1;
+      --slate-900: #0f172a;
+      --slate-800: #1e293b;
+      --slate-700: #334155;
+      --slate-600: #475569;
+      --slate-500: #64748b;
+      --slate-200: #e2e8f0;
+      --slate-100: #f1f5f9;
+      --slate-50: #f8fafc;
+      --emerald-600: #059669;
+      --emerald-50: #ecfdf5;
+      --amber-600: #d97706;
+      --amber-50: #fffbeb;
+      --indigo-600: #4f46e5;
+      --indigo-50: #eef2ff;
+    }
+
+    * {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+    }
+
+    body {
+      font-family: 'Plus Jakarta Sans', system-ui, -apple-system, sans-serif;
+      background-color: #f1f5f9;
+      color: var(--slate-800);
+      -webkit-font-smoothing: antialiased;
+      line-height: 1.4;
+      padding: 24px;
+    }
+
+    /* Barra superior de ações na visualização web */
+    .action-bar {
+      max-width: 1280px;
+      margin: 0 auto 20px auto;
+      background: white;
+      padding: 14px 20px;
+      border-radius: 14px;
+      border: 1px solid var(--slate-200);
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.05);
+    }
+
+    .action-info {
+      font-size: 13px;
+      color: var(--slate-600);
+    }
+    .action-info strong {
+      color: var(--primary);
+    }
+
+    .btn-print {
+      background: var(--primary);
+      color: white;
+      border: none;
+      padding: 9px 18px;
+      border-radius: 10px;
+      font-size: 13px;
+      font-weight: 700;
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      transition: all 0.2s;
+    }
+    .btn-print:hover {
+      background: var(--primary-dark);
+      transform: translateY(-1px);
+    }
+
+    /* Folha A4 do Relatório */
+    .report-sheet {
+      max-width: 1280px;
+      width: 100%;
+      margin: 0 auto;
+      background: white;
+      padding: 32px 36px;
+      border-radius: 16px;
+      border: 1px solid var(--slate-200);
+      box-shadow: 0 10px 25px -5px rgba(0, 0, 0, 0.06);
+    }
+
+    /* Cabeçalho Hospitalar */
+    .header {
+      display: flex;
+      justify-content: space-between;
+      align-items: flex-start;
+      border-bottom: 2px solid var(--slate-200);
+      padding-bottom: 18px;
+      margin-bottom: 20px;
+    }
+
+    .brand-title {
+      font-size: 24px;
+      font-weight: 800;
+      letter-spacing: -0.5px;
+      line-height: 1;
+    }
+    .brand-title .zor { color: var(--primary); }
+    .brand-title .ion { color: var(--slate-900); }
+
+    .brand-subtitle {
+      font-size: 11px;
+      font-weight: 700;
+      text-transform: uppercase;
+      letter-spacing: 1px;
+      color: var(--primary-dark);
+      margin-top: 4px;
+    }
+
+    .hospital-meta {
+      font-size: 11px;
+      color: var(--slate-500);
+      margin-top: 6px;
+      line-height: 1.4;
+    }
+
+    .report-badge-box {
+      text-align: right;
+    }
+
+    .report-badge {
+      display: inline-block;
+      background: var(--slate-100);
+      border: 1px solid var(--slate-200);
+      color: var(--slate-700);
+      font-size: 11px;
+      font-weight: 700;
+      padding: 4px 10px;
+      border-radius: 6px;
+      text-transform: uppercase;
+      letter-spacing: 0.5px;
+    }
+
+    .report-title {
+      font-size: 17px;
+      font-weight: 800;
+      color: var(--slate-900);
+      margin-top: 6px;
+    }
+
+    .report-date {
+      font-size: 11px;
+      color: var(--slate-500);
+      margin-top: 3px;
+      font-family: 'JetBrains Mono', monospace;
+    }
+
+    /* Painel de KPIs / Resumo Estatístico */
+    .kpi-grid {
+      display: grid;
+      grid-template-columns: repeat(5, 1fr);
+      gap: 12px;
+      margin-bottom: 22px;
+    }
+
+    .kpi-card {
+      background: var(--slate-50);
+      border: 1px solid var(--slate-200);
+      border-radius: 10px;
+      padding: 10px 12px;
+    }
+    .kpi-label {
+      font-size: 10px;
+      font-weight: 700;
+      text-transform: uppercase;
+      letter-spacing: 0.5px;
+      color: var(--slate-500);
+    }
+    .kpi-value {
+      font-size: 20px;
+      font-weight: 800;
+      color: var(--slate-900);
+      margin-top: 2px;
+    }
+    .kpi-sub {
+      font-size: 10px;
+      color: var(--slate-500);
+      margin-top: 2px;
+    }
+
+    /* Tabela de Atendimentos */
+    .table-container {
+      border: 1px solid var(--slate-200);
+      border-radius: 12px;
+      overflow-x: auto;
+      margin-bottom: 24px;
+    }
+
+    table {
+      width: 100%;
+      border-collapse: collapse;
+      font-size: 11px;
+      text-align: left;
+    }
+
+    thead {
+      background-color: var(--slate-100);
+      border-bottom: 1px solid var(--slate-200);
+    }
+
+    th {
+      padding: 10px 10px;
+      font-size: 10px;
+      font-weight: 700;
+      text-transform: uppercase;
+      letter-spacing: 0.5px;
+      color: var(--slate-600);
+      white-space: nowrap;
+    }
+
+    tbody tr {
+      border-bottom: 1px solid #f1f5f9;
+    }
+    tbody tr:last-child {
+      border-bottom: none;
+    }
+    tbody tr:nth-child(even) {
+      background-color: #fafbfc;
+    }
+
+    td {
+      padding: 10px 10px;
+      vertical-align: middle;
+      color: var(--slate-800);
+    }
+
+    .col-paciente {
+      min-width: 170px;
+    }
+    .paciente-nome {
+      font-weight: 700;
+      color: var(--slate-900);
+      font-size: 11.5px;
+      line-height: 1.25;
+    }
+    .paciente-pront {
+      font-family: 'JetBrains Mono', monospace;
+      font-size: 10px;
+      color: var(--slate-500);
+      margin-top: 2px;
+    }
+
+    .time-mono {
+      font-family: 'JetBrains Mono', monospace;
+      font-weight: 600;
+      color: var(--slate-700);
+      white-space: nowrap;
+      text-align: center;
+    }
+
+    .th-center {
+      text-align: center;
+    }
+
+    /* Badges de Motivo / Status */
+    .badge {
+      display: inline-block;
+      padding: 3px 8px;
+      border-radius: 6px;
+      font-size: 10px;
+      font-weight: 700;
+      white-space: nowrap;
+    }
+    .badge-admissao {
+      background: #eff6ff;
+      color: #1d4ed8;
+      border: 1px solid #bfdbfe;
+    }
+    .badge-alta {
+      background: var(--emerald-50);
+      color: var(--emerald-600);
+      border: 1px solid #a7f3d0;
+    }
+    .badge-observacao {
+      background: var(--amber-50);
+      color: var(--amber-600);
+      border: 1px solid #fde68a;
+    }
+
+    .col-ala {
+      min-width: 180px;
+    }
+    .badge-ala {
+      background: var(--indigo-50);
+      color: var(--indigo-700);
+      border: 1px solid #c7d2fe;
+      font-weight: 700;
+      font-size: 10.5px;
+      padding: 4px 10px;
+      border-radius: 6px;
+      display: inline-block;
+      white-space: normal;
+      word-break: break-word;
+      line-height: 1.3;
+    }
+
+    .tempo-pill {
+      display: inline-block;
+      font-family: 'JetBrains Mono', monospace;
+      font-size: 10px;
+      font-weight: 700;
+      color: #0369a1;
+      background: #f0f9ff;
+      border: 1px solid #bae6fd;
+      padding: 2px 6px;
+      border-radius: 5px;
+      white-space: nowrap;
+    }
+
+    /* Assinaturas e Rodapé de Auditoria */
+    .signatures-grid {
+      display: grid;
+      grid-template-columns: repeat(2, 1fr);
+      gap: 40px;
+      margin-top: 36px;
+      padding-top: 20px;
+      border-top: 1px dashed var(--slate-200);
+    }
+
+    .signature-box {
+      text-align: center;
+    }
+    .signature-line {
+      border-top: 1px solid var(--slate-700);
+      width: 75%;
+      margin: 0 auto 6px auto;
+    }
+    .signature-name {
+      font-size: 11px;
+      font-weight: 700;
+      color: var(--slate-800);
+    }
+    .signature-role {
+      font-size: 10px;
+      color: var(--slate-500);
+    }
+
+    .footer-audit {
+      margin-top: 24px;
+      padding-top: 12px;
+      border-top: 1px solid var(--slate-200);
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      font-size: 9.5px;
+      color: var(--slate-400);
+      font-family: 'JetBrains Mono', monospace;
+    }
+
+    /* Configuração A4 e Impressão Nativa */
+    @media print {
+      body {
+        background: white;
+        padding: 0;
+      }
+      .action-bar {
+        display: none !important;
+      }
+      .report-sheet {
+        border: none;
+        box-shadow: none;
+        padding: 0;
+        max-width: 100%;
+      }
+      @page {
+        size: A4 landscape;
+        margin: 12mm 10mm;
+      }
+      * {
+        -webkit-print-color-adjust: exact !important;
+        print-color-adjust: exact !important;
+      }
+    }
+  </style>
+</head>
+<body>
+
+  <!-- BARRA DE VISUALIZAÇÃO / AÇÃO RÁPIDA -->
+  <div class="action-bar">
+    <div class="action-info">
+      📄 <strong>Modo Pré-visualização de Relatório Hospitalar</strong> — Formato oficial A4 (Paisagem)
+    </div>
+    <button class="btn-print" onclick="window.print()">
+      🖨️ Imprimir / Salvar em PDF
+    </button>
+  </div>
+
+  <!-- FOLHA OFICIAL DO RELATÓRIO -->
+  <div class="report-sheet">
+    
+    <!-- CABEÇALHO -->
+    <header class="header">
+      <div>
+        <div class="brand-title">
+          <span class="zor">ZOR</span><span class="ion">ION</span>
+        </div>
+        <div class="brand-subtitle">
+          Hospitalar • Módulo de Recepção & Triagem
+        </div>
+        <div class="hospital-meta">
+          Unidade de Internação e Acolhimento Especializado<br>
+          CNPJ: 00.000.000/0001-99 • Responsável Técnico: Dr. Médico Responsável (CRM/SP 000000)
+        </div>
+      </div>
+
+      <div class="report-badge-box">
+        <span class="report-badge">Documento Oficial</span>
+        <h1 class="report-title">Relatório de Atendimentos & Acolhimento</h1>
+        <div class="report-date">
+          Data de Emissão: 29/10/2026 às 08:00 • Plantão Recepção
+        </div>
+      </div>
+    </header>
+
+    <!-- RESUMO ESTATÍSTICO (KPIS) -->
+    <section class="kpi-grid">
+      <div class="kpi-card">
+        <div class="kpi-label">Total Atendimentos</div>
+        <div class="kpi-value">12</div>
+        <div class="kpi-sub">Plantão de hoje</div>
+      </div>
+      <div class="kpi-card">
+        <div class="kpi-label">Admissões / Leito</div>
+        <div class="kpi-value" style="color: #1d4ed8;">5</div>
+        <div class="kpi-sub">Encaminhados p/ Ala</div>
+      </div>
+      <div class="kpi-card">
+        <div class="kpi-label">Altas / Liberados</div>
+        <div class="kpi-value" style="color: #059669;">6</div>
+        <div class="kpi-sub">Após consulta médica</div>
+      </div>
+      <div class="kpi-card">
+        <div class="kpi-label">Tempo Médio Espera</div>
+        <div class="kpi-value" style="color: #d97706;">14 min</div>
+        <div class="kpi-sub">Recepção ➔ Consultório</div>
+      </div>
+      <div class="kpi-card">
+        <div class="kpi-label">Tempo Médio Consulta</div>
+        <div class="kpi-value" style="color: #4f46e5;">22 min</div>
+        <div class="kpi-sub">Dentro do consultório</div>
+      </div>
+    </section>
+
+    <!-- TABELA COMPLETA COM LINHA DO TEMPO DOS PACIENTES -->
+    <section class="table-container">
+      <table>
+        <thead>
+          <tr>
+            <th class="col-paciente">Paciente / Prontuário</th>
+            <th class="th-center">Entrada Recepção</th>
+            <th class="th-center">Aviso Equipe</th>
+            <th class="th-center">Entrada Consultório</th>
+            <th class="th-center">Saída Consultório</th>
+            <th class="th-center">Tempo Espera</th>
+            <th class="th-center">Tempo Consulta</th>
+            <th>Motivo / Desfecho</th>
+            <th class="col-ala">Ala de Destino</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr>
+            <td class="col-paciente">
+              <div class="paciente-nome">JOSTHER MIRANDA DA SILVA</div>
+              <div class="paciente-pront">Pront: 13990</div>
+            </td>
+            <td class="time-mono">07:15</td>
+            <td class="time-mono">07:18</td>
+            <td class="time-mono">07:30</td>
+            <td class="time-mono">07:55</td>
+            <td class="time-mono"><span class="tempo-pill">15 min</span></td>
+            <td class="time-mono"><span class="tempo-pill">25 min</span></td>
+            <td><span class="badge badge-admissao">🏥 Admissão</span></td>
+            <td class="col-ala"><span class="badge badge-ala">Reabilitação Masculina</span></td>
+          </tr>
+
+          <tr>
+            <td class="col-paciente">
+              <div class="paciente-nome">ALEXANDRE BADARÓ</div>
+              <div class="paciente-pront">Pront: 13067</div>
+            </td>
+            <td class="time-mono">07:20</td>
+            <td class="time-mono">07:22</td>
+            <td class="time-mono">07:35</td>
+            <td class="time-mono">07:48</td>
+            <td class="time-mono"><span class="tempo-pill">15 min</span></td>
+            <td class="time-mono"><span class="tempo-pill">13 min</span></td>
+            <td><span class="badge badge-alta">✅ Alta</span></td>
+            <td class="col-ala"><span style="color: #94a3b8; font-weight: 600;">— (Não internado)</span></td>
+          </tr>
+
+          <tr>
+            <td class="col-paciente">
+              <div class="paciente-nome">MARIA APARECIDA SANTOS</div>
+              <div class="paciente-pront">Pront: 14102</div>
+            </td>
+            <td class="time-mono">07:30</td>
+            <td class="time-mono">07:32</td>
+            <td class="time-mono">07:45</td>
+            <td class="time-mono">08:10</td>
+            <td class="time-mono"><span class="tempo-pill">15 min</span></td>
+            <td class="time-mono"><span class="tempo-pill">25 min</span></td>
+            <td><span class="badge badge-admissao">🏥 Admissão</span></td>
+            <td class="col-ala"><span class="badge badge-ala">Clínica Médica Feminina</span></td>
+          </tr>
+
+          <tr>
+            <td class="col-paciente">
+              <div class="paciente-nome">CARLOS EDUARDO SILVEIRA</div>
+              <div class="paciente-pront">Pront: 13854</div>
+            </td>
+            <td class="time-mono">07:40</td>
+            <td class="time-mono">07:42</td>
+            <td class="time-mono">07:50</td>
+            <td class="time-mono">08:05</td>
+            <td class="time-mono"><span class="tempo-pill">10 min</span></td>
+            <td class="time-mono"><span class="tempo-pill">15 min</span></td>
+            <td><span class="badge badge-alta">✅ Alta</span></td>
+            <td class="col-ala"><span style="color: #94a3b8; font-weight: 600;">— (Liberado)</span></td>
+          </tr>
+
+          <tr>
+            <td class="col-paciente">
+              <div class="paciente-nome">LUCAS FERREIRA GOMES</div>
+              <div class="paciente-pront">Pront: 14210</div>
+            </td>
+            <td class="time-mono">07:50</td>
+            <td class="time-mono">07:55</td>
+            <td class="time-mono">08:05</td>
+            <td class="time-mono">08:25</td>
+            <td class="time-mono"><span class="tempo-pill">15 min</span></td>
+            <td class="time-mono"><span class="tempo-pill">20 min</span></td>
+            <td><span class="badge badge-observacao">👁️ Observação</span></td>
+            <td class="col-ala"><span class="badge badge-ala">Ala de Observação Rápida</span></td>
+          </tr>
+        </tbody>
+      </table>
+    </section>
+
+    <!-- ASSINATURAS INSTITUCIONAIS -->
+    <div class="signatures-grid">
+      <div class="signature-box">
+        <div class="signature-line"></div>
+        <div class="signature-name">Administrador / Recepção Hospitalar</div>
+        <div class="signature-role">Operador Responsável pelo Plantão</div>
+      </div>
+
+      <div class="signature-box">
+        <div class="signature-line"></div>
+        <div class="signature-name">Supervisão de Acolhimento & Triagem</div>
+        <div class="signature-role">Coordenação de Fluxo Hospitalar</div>
+      </div>
+    </div>
+
+    <!-- RODAPÉ DE AUDITORIA E SEGURANÇA -->
+    <footer class="footer-audit">
+      <span>ZORION SAÚDE v1.0.8 • MÓDULO RECEPÇÃO</span>
+      <span>AUTENTICAÇÃO: SHA256-ZOR-REC-20261029-A8F4</span>
+      <span>PÁGINA 1 DE 1</span>
+    </footer>
+
+  </div>
+
+</body>
+</html>

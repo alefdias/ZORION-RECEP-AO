@@ -84,7 +84,7 @@ export function AtendimentoModal({
         observacoes: atendimento.observacoes || ""
       });
 
-      const pac = patients.find(p => String(p.id) === String(atendimento.pacienteId));
+      const pac = patients?.find(p => String(p.id) === String(atendimento.pacienteId));
       if (pac) {
         setSelectedPatient(pac);
       } else {
@@ -112,12 +112,12 @@ export function AtendimentoModal({
         observacoes: ""
       });
     }
-  }, [open, atendimento, patients]);
+  }, [open, atendimento]);
 
   // Filtra pacientes cadastrados no banco de dados pela busca
   const filteredPatients = useMemo(() => {
     if (!patients || patients.length === 0) return [];
-    if (!patientSearch.trim()) return patients.slice(0, 15); // Primeiros 15 para navegação rápida
+    if (!patientSearch.trim()) return patients.slice(0, 15);
     const term = patientSearch.trim().toLowerCase();
     return patients.filter(p => {
       const nome = (p.nome || "").toLowerCase().includes(term);
@@ -215,26 +215,26 @@ export function AtendimentoModal({
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="max-w-2xl w-[95vw] p-0 overflow-hidden rounded-2xl bg-white shadow-2xl border border-slate-200">
-        <DialogHeader className="bg-gradient-to-r from-sky-700 to-cyan-700 p-5 text-white">
+      <DialogContent className="sm:max-w-xl w-[95vw] max-h-[90vh] flex flex-col gap-0 p-0 overflow-hidden rounded-2xl bg-white shadow-2xl border border-slate-200">
+        <DialogHeader className="shrink-0 bg-gradient-to-r from-sky-700 to-cyan-700 px-5 py-3.5 text-white pr-12">
           <div className="flex items-center gap-2.5">
-            <div className="w-10 h-10 rounded-xl bg-white/15 flex items-center justify-center backdrop-blur-xs shadow-inner">
+            <div className="w-9 h-9 rounded-xl bg-white/15 flex items-center justify-center backdrop-blur-xs shadow-inner">
               <Stethoscope className="w-5 h-5 text-white" />
             </div>
             <div>
-              <DialogTitle className="text-lg font-bold">
+              <DialogTitle className="text-base font-bold text-white">
                 {atendimento ? "Editar Atendimento de Recepção" : "Novo Atendimento / Admissão"}
               </DialogTitle>
-              <p className="text-xs text-sky-100">
-                Registro de fluxo de entrada e consultório para paciente cadastrado
+              <p className="text-[11px] text-sky-100">
+                Registro de acolhimento e consultório para paciente cadastrado
               </p>
             </div>
           </div>
         </DialogHeader>
 
-        <form onSubmit={handleSubmit} className="p-6 space-y-5">
+        <form onSubmit={handleSubmit} className="flex-1 overflow-y-auto p-4 sm:p-5 space-y-4">
           {/* 1. SELEÇÃO DO PACIENTE (EXCLUSIVAMENTE DO BANCO DE DADOS) */}
-          <div className="space-y-2.5 p-4 rounded-xl bg-slate-50 border border-slate-200">
+          <div className="space-y-2 p-3.5 rounded-xl bg-slate-50 border border-slate-200">
             <div className="flex items-center justify-between">
               <Label className="text-xs font-bold text-slate-800 flex items-center gap-1.5">
                 <UserCheck className="w-4 h-4 text-sky-600" />
@@ -253,27 +253,33 @@ export function AtendimentoModal({
             </div>
 
             {selectedPatient ? (
-              /* CARD DO PACIENTE SELECIONADO (DADOS FIXOS DO BANCO) */
-              <div className="p-3.5 rounded-xl bg-white border border-sky-200 shadow-xs flex items-center justify-between gap-3">
+              /* CARD DO PACIENTE SELECIONADO */
+              <div className="p-3 rounded-xl bg-white border border-sky-200 shadow-xs flex items-center justify-between gap-3">
                 <div className="flex items-center gap-3 min-w-0">
-                  <div className="w-10 h-10 rounded-xl bg-sky-100 text-sky-700 flex items-center justify-center font-bold text-sm shrink-0">
+                  <div className="w-10 h-10 rounded-xl bg-sky-600 text-white flex items-center justify-center font-bold text-sm shrink-0 shadow-xs">
                     {selectedPatient.nome ? selectedPatient.nome.charAt(0).toUpperCase() : "P"}
                   </div>
                   <div className="min-w-0">
-                    <h4 className="font-bold text-slate-800 text-sm truncate">
-                      {selectedPatient.nome}
-                    </h4>
-                    <div className="flex items-center gap-2 mt-0.5 flex-wrap">
-                      <Badge variant="outline" className="font-mono text-[10px] bg-slate-50 border-slate-300 text-slate-700">
-                        Prontuário: {selectedPatient.prontuario || "S/ Prontuário"}
-                      </Badge>
+                    <div className="flex items-center gap-2 flex-wrap">
+                      <h4 className="font-bold text-slate-900 text-sm truncate" title={selectedPatient.nome}>
+                        {selectedPatient.nome}
+                      </h4>
+                      <span className="inline-flex items-center gap-1 text-[10px] font-bold text-emerald-700 bg-emerald-50 border border-emerald-200 px-2 py-0.5 rounded-full shrink-0">
+                        <CheckCircle2 className="w-3 h-3 text-emerald-600" />
+                        Confirmado
+                      </span>
+                    </div>
+                    <div className="flex items-center gap-1.5 mt-1 flex-wrap">
+                      <span className="font-mono text-[11px] font-semibold bg-slate-100 border border-slate-200 text-slate-700 px-2 py-0.5 rounded-md">
+                        Pront: <b>{selectedPatient.prontuario || "S/ Prontuário"}</b>
+                      </span>
                       {selectedPatient.alaNome && (
-                        <Badge variant="outline" className="text-[10px] bg-indigo-50 border-indigo-200 text-indigo-700">
+                        <span className="text-[11px] font-semibold bg-indigo-50 border border-indigo-200 text-indigo-700 px-2 py-0.5 rounded-md">
                           Ala: {selectedPatient.alaNome}
-                        </Badge>
+                        </span>
                       )}
                       {selectedPatient.leito && (
-                        <span className="text-[10px] text-slate-500 font-semibold">
+                        <span className="text-[11px] text-slate-600 font-medium bg-slate-100 border border-slate-200 px-2 py-0.5 rounded-md">
                           Leito: {selectedPatient.leito}
                         </span>
                       )}
@@ -281,65 +287,86 @@ export function AtendimentoModal({
                   </div>
                 </div>
 
-                <div className="shrink-0 flex items-center gap-1 text-emerald-600 font-bold text-xs">
-                  <CheckCircle2 className="w-4 h-4" />
-                  <span className="hidden sm:inline">Confirmado</span>
-                </div>
+                {!atendimento && (
+                  <Button
+                    type="button"
+                    variant="outline"
+                    size="sm"
+                    onClick={handleClearPatient}
+                    className="shrink-0 h-8 px-2.5 text-xs text-slate-600 hover:text-sky-700 hover:border-sky-300 font-semibold cursor-pointer bg-white"
+                  >
+                    <RotateCcw className="w-3.5 h-3.5 mr-1" />
+                    Trocar
+                  </Button>
+                )}
               </div>
             ) : (
               /* CAMPO DE BUSCA E SELEÇÃO DE PACIENTES CADASTRADOS */
               <div className="space-y-2">
                 <div className="relative">
-                  <Search className="w-4 h-4 text-slate-400 absolute left-3 top-2.5" />
+                  <Search className="w-4 h-4 text-slate-400 absolute left-3 top-1/2 -translate-y-1/2 pointer-events-none" />
                   <Input
-                    placeholder="Digite o nome ou prontuário do paciente cadastrado..."
+                    type="text"
+                    placeholder="Buscar por nome, prontuário ou ala..."
                     value={patientSearch}
                     onChange={(e) => setPatientSearch(e.target.value)}
-                    className="pl-9 h-9 text-xs bg-white border-slate-300"
+                    className="pl-9 h-9 text-xs bg-white border-slate-300 focus-visible:ring-sky-500"
                     autoFocus
                   />
                 </div>
 
                 {/* Lista de pacientes filtrados do banco */}
-                <div className="max-h-44 overflow-y-auto divide-y divide-slate-100 rounded-xl border border-slate-200 bg-white shadow-inner">
+                <div className="max-h-36 overflow-y-auto divide-y divide-slate-100 rounded-xl border border-slate-200 bg-white shadow-inner">
                   {filteredPatients.length === 0 ? (
-                    <div className="p-4 text-center text-xs text-slate-400">
+                    <div className="p-3 text-center text-xs text-slate-400">
                       Nenhum paciente cadastrado encontrado com esse termo.
                     </div>
                   ) : (
                     filteredPatients.map(p => (
-                      <button
+                      <div
                         key={p.id}
-                        type="button"
+                        role="button"
+                        tabIndex={0}
                         onClick={() => handleSelectPatient(p)}
+                        onKeyDown={(e) => {
+                          if (e.key === "Enter" || e.key === " ") {
+                            e.preventDefault();
+                            handleSelectPatient(p);
+                          }
+                        }}
                         className="w-full text-left p-2.5 hover:bg-sky-50 transition-colors flex items-center justify-between gap-2 cursor-pointer group"
                       >
-                        <div className="min-w-0">
+                        <div className="min-w-0 flex-1">
                           <div className="font-bold text-slate-800 text-xs truncate group-hover:text-sky-700">
                             {p.nome}
                           </div>
-                          <div className="text-[10px] text-slate-400 font-mono">
-                            Prontuário: <b>{p.prontuario || "Não informado"}</b>
-                            {p.alaNome ? ` • Ala: ${p.alaNome}` : ""}
+                          <div className="text-[11px] text-slate-500 flex items-center gap-1.5 mt-0.5 flex-wrap">
+                            <span className="font-mono">Pront: <b>{p.prontuario || "Não informado"}</b></span>
+                            {p.alaNome && (
+                              <>
+                                <span>•</span>
+                                <span>Ala: <b>{p.alaNome}</b></span>
+                              </>
+                            )}
                           </div>
                         </div>
-                        <span className="text-[10px] font-bold text-sky-600 bg-sky-50 group-hover:bg-sky-100 px-2 py-0.5 rounded-lg shrink-0">
+                        <span className="text-[10px] font-bold text-sky-700 bg-sky-100 group-hover:bg-sky-600 group-hover:text-white px-2 py-0.5 rounded-lg shrink-0 transition-colors">
                           Selecionar ➔
                         </span>
-                      </button>
+                      </div>
                     ))
                   )}
                 </div>
 
                 {/* Botão de aviso se o paciente ainda não estiver cadastrado */}
-                <div className="pt-1 flex items-center justify-between text-xs text-slate-500">
+                <div className="pt-0.5 flex items-center justify-between text-xs text-slate-500">
                   <span className="text-[11px] text-slate-400">
-                    O paciente não está na lista?
+                    O paciente não está cadastrado?
                   </span>
                   <button
                     type="button"
                     onClick={handleCadastrarNovoPaciente}
-                    className="text-[11px] text-sky-700 hover:text-sky-900 font-bold flex items-center gap-1 cursor-pointer bg-sky-50 hover:bg-sky-100 px-2.5 py-1 rounded-lg border border-sky-200"
+                    className="text-[11px] text-sky-700 hover:text-sky-900 font-bold flex items-center gap-1 cursor-pointer bg-sky-50 hover:bg-sky-100 px-2.5 py-1 rounded-lg border border-sky-200 transition-colors"
                   >
                     <PlusCircle className="w-3.5 h-3.5" />
                     Cadastrar Paciente Primeiro
@@ -349,15 +376,15 @@ export function AtendimentoModal({
             )}
           </div>
 
-          {/* 2. DATAS E HORÁRIOS AUTOMÁTICOS */}
-          <div className="space-y-3">
+          {/* 2. DATAS E HORÁRIOS */}
+          <div className="space-y-2.5">
             <Label className="text-xs font-bold text-slate-700 flex items-center gap-1.5">
               <Clock className="w-3.5 h-3.5 text-sky-600" />
               Linha do Tempo de Atendimento
             </Label>
 
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-              {/* Data Admissão (Automática) */}
+              {/* Data Admissão */}
               <div>
                 <Label className="text-[11px] font-semibold text-slate-500 mb-1 block">
                   Data de Admissão:
@@ -371,7 +398,7 @@ export function AtendimentoModal({
                 />
               </div>
 
-              {/* Horário de Entrada (Automático) */}
+              {/* Horário de Entrada (Recepção) */}
               <div>
                 <div className="flex items-center justify-between mb-1">
                   <Label className="text-[11px] font-semibold text-slate-500">
@@ -463,7 +490,7 @@ export function AtendimentoModal({
 
             {/* Painel de Cálculo em Tempo Real */}
             {(tempoEsperaCalc || tempoConsultorioCalc || tempoTotalCalc) && (
-              <div className="flex items-center gap-2 flex-wrap p-2.5 rounded-xl bg-sky-50/70 border border-sky-100 text-xs">
+              <div className="flex items-center gap-2 flex-wrap p-2 rounded-xl bg-sky-50/70 border border-sky-100 text-xs">
                 {tempoEsperaCalc && (
                   <Badge variant="outline" className="bg-white border-sky-200 text-sky-700 font-semibold text-[11px]">
                     ⏳ Espera: {tempoEsperaCalc}
@@ -483,7 +510,7 @@ export function AtendimentoModal({
             )}
           </div>
 
-          {/* 3. MOTIVO (ALTA OU ADMISSÃO) & ALA QUE PACIENTE VAI */}
+          {/* 3. MOTIVO & ALA DE DESTINO */}
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 pt-1">
             <div>
               <Label className="text-[11px] font-semibold text-slate-500 mb-1 block">
@@ -540,7 +567,7 @@ export function AtendimentoModal({
             </div>
           </div>
 
-          {/* Observações */}
+          {/* 4. Observações */}
           <div>
             <Label className="text-[11px] font-semibold text-slate-500 mb-1 block">
               Observações / Encaminhamentos:
@@ -554,7 +581,7 @@ export function AtendimentoModal({
             />
           </div>
 
-          <DialogFooter className="gap-2 sm:gap-0 pt-2 border-t border-slate-100">
+          <DialogFooter className="shrink-0 pt-3 border-t border-slate-100 flex items-center justify-end gap-2">
             <Button
               type="button"
               variant="outline"
