@@ -53,9 +53,9 @@ function ModuleCard({ mod, delay, visible, onClick }) {
       onMouseEnter={() => setHovered(true)}
       onMouseLeave={() => setHovered(false)}
       style={{
-        background: hovered ? "rgba(2,132,199,0.18)" : mod.bg,
-        border: `1.5px solid ${hovered ? "rgba(56,189,248,0.85)" : mod.border}`,
-        borderRadius: 20,
+        background: hovered ? "rgba(255, 255, 255, 0.95)" : "rgba(255, 255, 255, 0.82)",
+        border: `1.5px solid ${hovered ? "#10b981" : "rgba(203, 213, 225, 0.85)"}`,
+        borderRadius: 22,
         padding: "26px 20px 22px",
         cursor: "pointer",
         outline: "none",
@@ -63,7 +63,7 @@ function ModuleCard({ mod, delay, visible, onClick }) {
         flexDirection: "column",
         alignItems: "center",
         gap: 12,
-        width: 170,
+        width: 175,
         position: "relative",
         overflow: "hidden",
         transition: "all 0.28s cubic-bezier(0.34, 1.56, 0.64, 1)",
@@ -73,9 +73,9 @@ function ModuleCard({ mod, delay, visible, onClick }) {
         opacity: visible ? 1 : 0,
         transitionDelay: visible ? `${delay}ms` : "0ms",
         boxShadow: hovered
-          ? "0 8px 36px rgba(2,132,199,0.4)"
-          : "0 4px 18px rgba(0,0,0,0.25)",
-        backdropFilter: "blur(10px)",
+          ? "0 14px 40px rgba(16, 185, 129, 0.25), 0 0 0 1px rgba(16, 185, 129, 0.3)"
+          : "0 10px 25px -5px rgba(15, 23, 42, 0.08), 0 4px 6px -2px rgba(15, 23, 42, 0.03)",
+        backdropFilter: "blur(16px)",
       }}
     >
       <div style={{
@@ -87,18 +87,19 @@ function ModuleCard({ mod, delay, visible, onClick }) {
         justifyContent: "center",
         background: hovered
           ? `radial-gradient(circle, ${mod.glow} 0%, transparent 70%)`
-          : "transparent",
+          : "rgba(16, 185, 129, 0.12)",
+        border: `1px solid ${hovered ? "#10b981" : "rgba(16, 185, 129, 0.3)"}`,
         transition: "background 0.3s ease",
         filter: hovered ? `drop-shadow(0 0 10px ${mod.color})` : "none",
       }}>
-        <mod.Icon color={hovered ? "#38bdf8" : mod.color} />
+        <mod.Icon color={hovered ? "#059669" : mod.color} />
       </div>
 
       <div style={{ textAlign: "center" }}>
         <div style={{
           fontSize: 14,
           fontWeight: 700,
-          color: hovered ? "#38bdf8" : "#f8fafc",
+          color: hovered ? "#059669" : "#0f172a",
           letterSpacing: 0.3,
           transition: "color 0.25s ease",
           lineHeight: 1.3,
@@ -107,7 +108,7 @@ function ModuleCard({ mod, delay, visible, onClick }) {
         </div>
         <div style={{
           fontSize: 11,
-          color: hovered ? "#93c5fd" : "#64748b",
+          color: hovered ? "#047857" : "#64748b",
           marginTop: 3,
           lineHeight: 1.3,
           fontWeight: 500,
@@ -320,7 +321,7 @@ export function WelcomeScreenRecepcao({ onEnter }) {
         position: "fixed",
         inset: 0,
         zIndex: 9998,
-        background: "linear-gradient(145deg, #07111f 0%, #0b1a2e 40%, #060e1c 100%)",
+        background: "linear-gradient(145deg, #f8fafc 0%, #f0f9ff 45%, #e0f2fe 100%)",
         display: "flex",
         flexDirection: "column",
         alignItems: "center",
@@ -360,25 +361,25 @@ export function WelcomeScreenRecepcao({ onEnter }) {
         }}
       >
         <h1 style={{
-          fontSize: 44,
+          fontSize: 48,
           fontWeight: 900,
           lineHeight: 1,
-          letterSpacing: "-0.05em",
+          letterSpacing: "-0.04em",
           margin: "0 0 6px 0",
           display: "flex",
           alignItems: "center",
           justifyContent: "center",
-          gap: 2
+          gap: 6
         }}>
-          <span style={{ color: "#38bdf8" }}>ZOR</span>
-          <span style={{ color: "#ffffff" }}>ION</span>
+          <span style={{ color: "#0284c7" }}>ZORION</span>
+          <span style={{ color: "#0f172a", fontWeight: 900 }}>SAÚDE</span>
         </h1>
 
         <span
           style={{
             fontSize: 11,
-            fontWeight: 600,
-            color: "#475569",
+            fontWeight: 700,
+            color: "#0369a1",
             letterSpacing: 2.5,
             textTransform: "uppercase",
             display: "flex",
@@ -387,15 +388,15 @@ export function WelcomeScreenRecepcao({ onEnter }) {
             marginTop: 2
           }}
         >
-          <span>Sistema de Gestão Hospitalar</span>
+          <span>Recepção Central & Admissão Hospitalar</span>
         </span>
       </div>
 
       {/* Subtítulo Instrutivo */}
       <p
         style={{
-          fontSize: 13,
-          color: "#64748b",
+          fontSize: 14,
+          color: "#475569",
           marginBottom: 24,
           fontWeight: 500,
           letterSpacing: 0.2,
@@ -496,7 +497,7 @@ export function WelcomeScreenRecepcao({ onEnter }) {
             position: "fixed",
             inset: 0,
             zIndex: 9999,
-            background: "rgba(3, 7, 18, 0.78)",
+            background: "rgba(15, 23, 42, 0.45)",
             backdropFilter: "blur(14px)",
             display: "flex",
             alignItems: "center",
@@ -506,13 +507,13 @@ export function WelcomeScreenRecepcao({ onEnter }) {
         >
           <div
             style={{
-              background: "#0c1322",
-              border: "1px solid rgba(16, 185, 129, 0.3)",
+              background: "linear-gradient(145deg, #ffffff 0%, #f8fafc 100%)",
+              border: "1.5px solid rgba(16, 185, 129, 0.35)",
               borderRadius: 22,
               padding: "30px 26px 26px",
               width: "100%",
               maxWidth: 380,
-              boxShadow: "0 0 35px rgba(16, 185, 129, 0.15), 0 25px 60px rgba(0,0,0,0.8)",
+              boxShadow: "0 20px 50px rgba(16, 185, 129, 0.15), 0 10px 25px -5px rgba(15, 23, 42, 0.08)",
               position: "relative",
               transition: "all 0.3s ease",
             }}
@@ -526,7 +527,7 @@ export function WelcomeScreenRecepcao({ onEnter }) {
                 right: 18,
                 background: "transparent",
                 border: "none",
-                color: "#475569",
+                color: "#64748b",
                 cursor: "pointer",
                 padding: 4,
                 display: "flex",
@@ -534,7 +535,7 @@ export function WelcomeScreenRecepcao({ onEnter }) {
                 justifyContent: "center"
               }}
             >
-              <X className="w-5 h-5 text-slate-500 hover:text-slate-300 transition-colors" />
+              <X className="w-5 h-5 text-slate-400 hover:text-slate-600 transition-colors" />
             </button>
 
             {/* Cabeçalho do Modal */}
@@ -553,7 +554,7 @@ export function WelcomeScreenRecepcao({ onEnter }) {
                 <selectedModule.Icon color="#10b981" />
               </div>
               <div>
-                <h3 style={{ margin: 0, fontSize: 18, fontWeight: 700, color: "#f8fafc" }}>
+                <h3 style={{ margin: 0, fontSize: 18, fontWeight: 700, color: "#0f172a" }}>
                   {selectedModule.label}
                 </h3>
                 <span style={{ fontSize: 13, color: "#64748b" }}>
@@ -566,7 +567,7 @@ export function WelcomeScreenRecepcao({ onEnter }) {
             {!isFirstLogin ? (
               <form onSubmit={handleLoginSubmit} style={{ display: "flex", flexDirection: "column", gap: 16 }}>
                 <div>
-                  <label style={{ display: "block", fontSize: 13, fontWeight: 500, color: "#cbd5e1", marginBottom: 7 }}>
+                  <label style={{ display: "block", fontSize: 13, fontWeight: 600, color: "#475569", marginBottom: 7 }}>
                     Usuário
                   </label>
                   <input
@@ -580,9 +581,9 @@ export function WelcomeScreenRecepcao({ onEnter }) {
                       width: "100%",
                       padding: "12px 14px",
                       borderRadius: 10,
-                      background: "#162032",
-                      border: "1px solid #24344d",
-                      color: "#f8fafc",
+                      background: "#f8fafc",
+                      border: "1.5px solid #cbd5e1",
+                      color: "#0f172a",
                       fontSize: 14,
                       outline: "none",
                       boxSizing: "border-box",
@@ -590,10 +591,10 @@ export function WelcomeScreenRecepcao({ onEnter }) {
                     }}
                     onFocus={e => {
                       e.target.style.borderColor = "#10b981";
-                      e.target.style.boxShadow = "0 0 0 1px rgba(16, 185, 129, 0.35)";
+                      e.target.style.boxShadow = "0 0 0 2px rgba(16, 185, 129, 0.2)";
                     }}
                     onBlur={e => {
-                      e.target.style.borderColor = "#24344d";
+                      e.target.style.borderColor = "#cbd5e1";
                       e.target.style.boxShadow = "none";
                     }}
                   />
@@ -601,7 +602,7 @@ export function WelcomeScreenRecepcao({ onEnter }) {
 
                 <div>
                   <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 7 }}>
-                    <label style={{ fontSize: 13, fontWeight: 500, color: "#cbd5e1" }}>
+                    <label style={{ fontSize: 13, fontWeight: 600, color: "#475569" }}>
                       Senha
                     </label>
                     <button
@@ -632,9 +633,9 @@ export function WelcomeScreenRecepcao({ onEnter }) {
                       width: "100%",
                       padding: "12px 14px",
                       borderRadius: 10,
-                      background: "#162032",
-                      border: "1px solid #24344d",
-                      color: "#f8fafc",
+                      background: "#f8fafc",
+                      border: "1.5px solid #cbd5e1",
+                      color: "#0f172a",
                       fontSize: 14,
                       outline: "none",
                       boxSizing: "border-box",
@@ -642,10 +643,10 @@ export function WelcomeScreenRecepcao({ onEnter }) {
                     }}
                     onFocus={e => {
                       e.target.style.borderColor = "#10b981";
-                      e.target.style.boxShadow = "0 0 0 1px rgba(16, 185, 129, 0.35)";
+                      e.target.style.boxShadow = "0 0 0 2px rgba(16, 185, 129, 0.2)";
                     }}
                     onBlur={e => {
-                      e.target.style.borderColor = "#24344d";
+                      e.target.style.borderColor = "#cbd5e1";
                       e.target.style.boxShadow = "none";
                     }}
                   />
