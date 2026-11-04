@@ -18,16 +18,21 @@ import {
   Timer,
   ChevronRight,
   Edit,
-  Sparkles
+  Sparkles,
+  BedDouble,
+  XCircle,
+  Hospital
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
 import { Card, CardContent } from "@/components/ui/card";
+import { Label } from "@/components/ui/label";
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "@/components/ui/dialog";
 import { format, parseISO } from "date-fns";
 import { ptBR } from "date-fns/locale";
 import { toast } from "sonner";
-import { AtendimentoRecepcaoService } from "@/api/db";
+import { AtendimentoRecepcaoService, PacienteService } from "@/api/db";
 import { AtendimentoModal } from "@/components/AtendimentoModal";
 
 export function AtendimentosRecepcao({
@@ -45,6 +50,12 @@ export function AtendimentosRecepcao({
   const [modalOpen, setModalOpen] = useState(false);
   const [atendimentoToEdit, setAtendimentoToEdit] = useState(null);
   const [isDeletingId, setIsDeletingId] = useState(null);
+
+  // Estados para o modal de admissão rápida
+  const [admissaoModal, setAdmissaoModal] = useState(false);
+  const [admissaoItem, setAdmissaoItem] = useState(null);
+  const [admissaoProntuario, setAdmissaoProntuario] = useState("");
+  const [isSavingAdmissao, setIsSavingAdmissao] = useState(false);
 
   const hojeStr = format(new Date(), "yyyy-MM-dd");
 
@@ -177,6 +188,56 @@ export function AtendimentosRecepcao({
 
   const handlePrint = () => {
     window.print();
+  };
+
+  // Abre o modal de admissão rápida para paciente que está em consulta
+  const handleAbrirAdmissao = (item) => {
+    setAdmissaoItem(item);
+    setAdmissaoProntuario(item.prontuario || "");
+    setAdmissaoModal(true);
+  };
+
+  // Confirmar admissão: registra motivo "Admissão" no atendimento e cria paciente no banco
+  const handleConfirmarAdmissao = async () => {
+    if (!admissaoItem) return;
+    setIsSavingAdmissao(true);
+    try {
+      // Atualiza o atendimento com motivo Admissão e prontuário informado
+      await AtendimentoRecepcaoService.update(admissaoItem.id, {
+        ...admissaoItem,
+        motivo: "Admissão",
+        prontuario: admissaoProntuario.trim() || admissaoItem.prontuario || "",
+        status: "Finalizado"
+      });
+
+      toast.success(`✅ Paciente "${admissaoItem.pacienteNome}" admitido com sucesso!`);
+      setAdmissaoModal(false);
+      setAdmissaoItem(null);
+      setAdmissaoProntuario("");
+      if (onRefresh) onRefresh();
+    } catch (err) {
+      console.error(err);
+      toast.error("Erro ao registrar admissão: " + (err.message || ""));
+    } finally {
+      setIsSavingAdmissao(false);
+    }
+  };
+
+  // Não admitido: registra motivo "Alta" (liberado sem internação) no atendimento
+  const handleNaoAdmitido = async (item) => {
+    if (!confirm(`Confirmar que "${item.pacienteNome}" NÃO será admitido (liberado sem internação)?`)) return;
+    try {
+      await AtendimentoRecepcaoService.update(item.id, {
+        ...item,
+        motivo: "Alta",
+        status: "Finalizado"
+      });
+      toast.success(`Paciente "${item.pacienteNome}" marcado como Não Admitido / Liberado.`);
+      if (onRefresh) onRefresh();
+    } catch (err) {
+      console.error(err);
+      toast.error("Erro ao registrar não admissão.");
+    }
   };
 
   return (
@@ -528,7 +589,43 @@ export function AtendimentosRecepcao({
 
                       {/* Ações */}
                       <td className="py-3 px-4 text-right">
-                        <div className="flex items-center justify-end gap-1.5 opacity-90 group-hover:opacity-100">
+                        <div className="flex items-center justify-end gap-1.5 opacity-90 group-hover:opacity-100 flex-wrap">
+
+                          {/* Botões Admitir / Não Admitir — aparecem para pacientes EM CONSULTA (entrou, não saiu, sem desfecho) */}
+                          {item.horarioEntradaConsultorio &&
+                           !item.horarioSaidaConsultorio &&
+                           item.motivo !== "Admissão" &&
+                           item.motivo !== "Alta" && (
+                            <>
+                              <button
+                                onClick={() => handleAbrirAdmissao(item)}
+                                title="Admitir paciente ao hospital"
+                                className="flex items-center gap-1 text-[10px] font-bold bg-emerald-50 hover:bg-emerald-500 text-emerald-700 hover:text-white border border-emerald-300 hover:border-emerald-500 px-2 py-1 rounded-lg transition-all cursor-pointer shadow-xs"
+                              >
+                                🏥 Admitir
+                              </button>
+                              <button
+                                onClick={() => handleNaoAdmitido(item)}
+                                title="Não admitido — paciente liberado sem internação"
+                                className="flex items-center gap-1 text-[10px] font-bold bg-rose-50 hover:bg-rose-500 text-rose-700 hover:text-white border border-rose-300 hover:border-rose-500 px-2 py-1 rounded-lg transition-all cursor-pointer shadow-xs"
+                              >
+                                ✖ Não Admitido
+                              </button>
+                            </>
+                          )}
+
+                          {/* Badge de desfecho já registrado */}
+                          {item.motivo === "Admissão" && item.status === "Finalizado" && (
+                            <span className="text-[10px] font-bold text-emerald-700 bg-emerald-50 border border-emerald-200 px-2 py-0.5 rounded-lg">
+                              🏥 Admitido
+                            </span>
+                          )}
+                          {item.motivo === "Alta" && item.status === "Finalizado" && (
+                            <span className="text-[10px] font-bold text-rose-700 bg-rose-50 border border-rose-200 px-2 py-0.5 rounded-lg">
+                              ✖ Não Admitido
+                            </span>
+                          )}
+
                           <button
                             onClick={() => handleOpenEdit(item)}
                             title="Editar Atendimento"
@@ -576,6 +673,74 @@ export function AtendimentosRecepcao({
         onNewPatient={onNewPatient}
         onSaved={onRefresh}
       />
+
+      {/* ─── MODAL DE ADMISSÃO RÁPIDA ─────────────────────────────────── */}
+      <Dialog open={admissaoModal} onOpenChange={(v) => { setAdmissaoModal(v); if (!v) { setAdmissaoItem(null); setAdmissaoProntuario(""); } }}>
+        <DialogContent className="sm:max-w-sm w-[92vw] rounded-2xl p-0 overflow-hidden border border-emerald-200 shadow-2xl">
+          {/* Header */}
+          <DialogHeader className="bg-gradient-to-r from-emerald-600 to-teal-600 px-5 py-4 pr-12">
+            <div className="flex items-center gap-3">
+              <div className="w-9 h-9 rounded-xl bg-white/20 flex items-center justify-center">
+                <span className="text-xl">🏥</span>
+              </div>
+              <div>
+                <DialogTitle className="text-base font-bold text-white">Confirmar Admissão</DialogTitle>
+                <p className="text-[11px] text-emerald-100 mt-0.5">Registrar internação do paciente</p>
+              </div>
+            </div>
+          </DialogHeader>
+
+          <div className="p-5 space-y-4">
+            {/* Info do paciente */}
+            <div className="flex items-center gap-3 p-3 rounded-xl bg-emerald-50 border border-emerald-200">
+              <div className="w-10 h-10 rounded-xl bg-emerald-600 text-white flex items-center justify-center font-bold text-sm shrink-0">
+                {admissaoItem?.pacienteNome?.charAt(0)?.toUpperCase() || "P"}
+              </div>
+              <div>
+                <div className="font-bold text-slate-800 text-sm">{admissaoItem?.pacienteNome}</div>
+                <div className="text-[11px] text-slate-500 font-mono mt-0.5">
+                  {admissaoItem?.prontuario ? `Prontuário atual: ${admissaoItem.prontuario}` : "Sem prontuário registrado"}
+                </div>
+              </div>
+            </div>
+
+            {/* Campo de prontuário */}
+            <div>
+              <Label className="text-xs font-bold text-slate-700 mb-1.5 block">
+                Número do Prontuário:
+              </Label>
+              <Input
+                type="text"
+                placeholder="Digite o número do prontuário..."
+                value={admissaoProntuario}
+                onChange={(e) => setAdmissaoProntuario(e.target.value)}
+                className="h-10 text-sm font-mono font-bold border-emerald-300 focus-visible:ring-emerald-500 bg-white"
+                autoFocus
+              />
+              <p className="text-[10px] text-slate-400 mt-1">
+                O nome já está salvo. Informe apenas o número do prontuário para finalizar a admissão.
+              </p>
+            </div>
+          </div>
+
+          <DialogFooter className="px-5 pb-5 flex gap-2 justify-end">
+            <Button
+              variant="outline"
+              onClick={() => { setAdmissaoModal(false); setAdmissaoItem(null); setAdmissaoProntuario(""); }}
+              className="text-xs h-9 cursor-pointer"
+            >
+              Cancelar
+            </Button>
+            <Button
+              onClick={handleConfirmarAdmissao}
+              disabled={isSavingAdmissao}
+              className="bg-emerald-600 hover:bg-emerald-700 text-white font-bold text-xs h-9 cursor-pointer gap-1.5 shadow-sm"
+            >
+              {isSavingAdmissao ? "Salvando..." : "✅ Confirmar Admissão"}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }

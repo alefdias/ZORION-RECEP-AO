@@ -25,7 +25,8 @@ import {
   PlusCircle,
   UserCheck,
   RotateCcw,
-  AlertCircle
+  AlertCircle,
+  UserPlus
 } from "lucide-react";
 import { toast } from "sonner";
 import { AtendimentoRecepcaoService } from "@/api/db";
@@ -58,6 +59,8 @@ export function AtendimentoModal({
   const [patientSearch, setPatientSearch] = useState("");
   const [selectedPatient, setSelectedPatient] = useState(null);
   const [isSubmitting, setIsSubmitting] = useState(false);
+  // Modo: "banco" = selecionar do banco | "externo" = paciente externo (ainda não cadastrado)
+  const [modoEntrada, setModoEntrada] = useState("banco");
 
   // Inicializa o formulário com dados atuais ou do atendimento em edição
   useEffect(() => {
@@ -67,6 +70,7 @@ export function AtendimentoModal({
     const hojeStr = agora.toISOString().split("T")[0];
     const horaAtual = agora.toLocaleTimeString("pt-BR", { hour: "2-digit", minute: "2-digit" });
     setPatientSearch("");
+    setModoEntrada("banco");
 
     if (atendimento) {
       setFormData({
@@ -173,8 +177,10 @@ export function AtendimentoModal({
 
   const handleSubmit = async (e) => {
     e.preventDefault();
-    if (!formData.pacienteId || !formData.pacienteNome) {
-      toast.error("Selecione um paciente cadastrado no banco de dados para prosseguir.");
+
+    // Permite salvar: paciente do banco OU paciente externo (nome digitado manualmente)
+    if (!formData.pacienteNome || !formData.pacienteNome.trim()) {
+      toast.error("Informe o nome do paciente para prosseguir.");
       return;
     }
 
@@ -233,26 +239,65 @@ export function AtendimentoModal({
         </DialogHeader>
 
         <form onSubmit={handleSubmit} className="flex-1 overflow-y-auto p-4 sm:p-5 space-y-4">
-          {/* 1. SELEÇÃO DO PACIENTE (EXCLUSIVAMENTE DO BANCO DE DADOS) */}
+          {/* 1. SELEÇÃO DO PACIENTE */}
           <div className="space-y-2 p-3.5 rounded-xl bg-slate-50 border border-slate-200">
             <div className="flex items-center justify-between">
               <Label className="text-xs font-bold text-slate-800 flex items-center gap-1.5">
                 <UserCheck className="w-4 h-4 text-sky-600" />
-                Paciente Cadastrado no Banco de Dados <span className="text-red-500">*</span>
+                Paciente <span className="text-red-500">*</span>
               </Label>
-              {selectedPatient && !atendimento && (
-                <button
-                  type="button"
-                  onClick={handleClearPatient}
-                  className="text-[11px] text-sky-600 hover:text-sky-800 font-bold flex items-center gap-1 cursor-pointer"
-                >
-                  <RotateCcw className="w-3 h-3" />
-                  Trocar Paciente
-                </button>
+
+              {/* Toggle: banco vs externo */}
+              {!atendimento && (
+                <div className="flex items-center gap-1 bg-slate-100 p-0.5 rounded-lg border border-slate-200 text-[11px]">
+                  <button
+                    type="button"
+                    onClick={() => { setModoEntrada("banco"); setSelectedPatient(null); setFormData(prev => ({ ...prev, pacienteId: "", pacienteNome: "", prontuario: "" })); }}
+                    className={`px-2 py-0.5 rounded-md font-bold transition-all cursor-pointer ${modoEntrada === "banco" ? "bg-white text-sky-700 shadow-xs" : "text-slate-500 hover:text-slate-700"}`}
+                  >
+                    🔍 Buscar no Banco
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => { setModoEntrada("externo"); setSelectedPatient(null); setFormData(prev => ({ ...prev, pacienteId: "", pacienteNome: "", prontuario: "" })); }}
+                    className={`px-2 py-0.5 rounded-md font-bold transition-all cursor-pointer ${modoEntrada === "externo" ? "bg-white text-amber-700 shadow-xs" : "text-slate-500 hover:text-slate-700"}`}
+                  >
+                    👤 Paciente Externo
+                  </button>
+                </div>
               )}
             </div>
 
-            {selectedPatient ? (
+            {modoEntrada === "externo" && !atendimento ? (
+              /* MODO EXTERNO: paciente que ainda não existe no sistema */
+              <div className="space-y-2">
+                <div className="p-2.5 rounded-xl bg-amber-50 border border-amber-200 text-[11px] text-amber-700 font-semibold flex items-start gap-2">
+                  <AlertCircle className="w-3.5 h-3.5 mt-0.5 shrink-0" />
+                  <span>Paciente ainda não cadastrado no hospital. Poderá ser admitido ou não após a consulta.</span>
+                </div>
+                <div>
+                  <Label className="text-[11px] font-semibold text-slate-500 mb-1 block">Nome Completo:</Label>
+                  <Input
+                    type="text"
+                    placeholder="Nome completo do paciente..."
+                    value={formData.pacienteNome}
+                    onChange={(e) => setFormData(prev => ({ ...prev, pacienteNome: e.target.value }))}
+                    className="h-9 text-xs bg-white border-slate-300"
+                    autoFocus
+                  />
+                </div>
+                <div>
+                  <Label className="text-[11px] font-semibold text-slate-500 mb-1 block">Prontuário (se houver):</Label>
+                  <Input
+                    type="text"
+                    placeholder="Número do prontuário (opcional)..."
+                    value={formData.prontuario}
+                    onChange={(e) => setFormData(prev => ({ ...prev, prontuario: e.target.value }))}
+                    className="h-9 text-xs bg-white border-slate-300 font-mono"
+                  />
+                </div>
+              </div>
+            ) : selectedPatient ? (
               /* CARD DO PACIENTE SELECIONADO */
               <div className="p-3 rounded-xl bg-white border border-sky-200 shadow-xs flex items-center justify-between gap-3">
                 <div className="flex items-center gap-3 min-w-0">
@@ -592,7 +637,7 @@ export function AtendimentoModal({
             </Button>
             <Button
               type="submit"
-              disabled={isSubmitting || !formData.pacienteId}
+              disabled={isSubmitting || !formData.pacienteNome?.trim()}
               className="bg-sky-600 hover:bg-sky-700 text-white font-bold text-xs h-9 cursor-pointer shadow-sm disabled:opacity-50"
             >
               {isSubmitting ? "Salvando..." : (atendimento ? "Salvar Alterações" : "Registrar Atendimento")}
