@@ -32,8 +32,15 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "
 import { format, parseISO } from "date-fns";
 import { ptBR } from "date-fns/locale";
 import { toast } from "sonner";
-import { AtendimentoRecepcaoService, PacienteService } from "@/api/db";
+import { AtendimentoRecepcaoService, PacienteService, AlaService } from "@/api/db";
 import { AtendimentoModal } from "@/components/AtendimentoModal";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
 
 export function AtendimentosRecepcao({
   atendimentos = [],
@@ -861,9 +868,9 @@ export function AtendimentosRecepcao({
 
       {/* ─── MODAL DE ADMISSÃO RÁPIDA ─────────────────────────────────── */}
       <Dialog open={admissaoModal} onOpenChange={(v) => { setAdmissaoModal(v); if (!v) { setAdmissaoItem(null); setAdmissaoProntuario(""); } }}>
-        <DialogContent className="sm:max-w-sm w-[92vw] rounded-2xl p-0 overflow-hidden border border-emerald-200 shadow-2xl">
+        <DialogContent className="sm:max-w-md w-[94vw] rounded-2xl p-0 overflow-visible border border-emerald-200 shadow-2xl bg-white">
           {/* Header */}
-          <DialogHeader className="bg-gradient-to-r from-emerald-600 to-teal-600 px-5 py-4 pr-12">
+          <DialogHeader className="bg-gradient-to-r from-emerald-600 to-teal-600 px-5 py-4 pr-12 rounded-t-2xl">
             <div className="flex items-center gap-3">
               <div className="w-9 h-9 rounded-xl bg-white/20 flex items-center justify-center">
                 <span className="text-xl">🏥</span>
@@ -912,16 +919,50 @@ export function AtendimentosRecepcao({
               <Label className="text-xs font-bold text-slate-700 mb-1.5 block">
                 Ala de Internação:
               </Label>
-              <select
-                value={admissaoAlaId}
-                onChange={(e) => setAdmissaoAlaId(e.target.value)}
-                className="w-full h-10 px-3 rounded-lg border border-emerald-300 text-xs font-semibold bg-white text-slate-800 outline-none focus:ring-2 focus:ring-emerald-500"
+              <Select
+                value={String(admissaoAlaId || "")}
+                onValueChange={(val) => setAdmissaoAlaId(val)}
               >
-                <option value="">Selecione uma ala...</option>
-                {(alas || []).map(a => (
-                  <option key={a.id} value={a.id}>{a.nome}</option>
-                ))}
-              </select>
+                <SelectTrigger className="w-full h-10 px-3 rounded-xl border border-emerald-300 text-xs font-bold bg-white text-slate-800 shadow-xs focus:ring-2 focus:ring-emerald-500">
+                  <SelectValue placeholder="Selecione a ala de internação..." />
+                </SelectTrigger>
+                <SelectContent className="z-[10002] bg-white border border-slate-200 shadow-xl rounded-xl max-h-60">
+                  {(alas || []).map((a) => (
+                    <SelectItem key={a.id} value={String(a.id)} className="text-xs font-semibold py-2 cursor-pointer">
+                      🏥 {a.nome}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+
+              {/* Botões rápidos de 1 clique para cada Ala */}
+              {alas && alas.length > 0 && (
+                <div className="mt-2.5">
+                  <span className="text-[10px] uppercase font-bold text-slate-400 block mb-1">
+                    Ou clique direto na ala desejada:
+                  </span>
+                  <div className="flex flex-wrap gap-1.5 max-h-32 overflow-y-auto p-1">
+                    {alas.map((a) => {
+                      const isSelected = String(admissaoAlaId) === String(a.id);
+                      return (
+                        <button
+                          key={a.id}
+                          type="button"
+                          onClick={() => setAdmissaoAlaId(String(a.id))}
+                          className={`text-[11px] font-bold px-3 py-1.5 rounded-lg border transition-all cursor-pointer flex items-center gap-1.5 shadow-2xs active:scale-95 ${
+                            isSelected
+                              ? "bg-emerald-600 text-white border-emerald-600 ring-2 ring-emerald-300 shadow-xs"
+                              : "bg-slate-50 hover:bg-emerald-50 text-slate-700 hover:text-emerald-800 border-slate-200"
+                          }`}
+                        >
+                          <span>🏥</span>
+                          <span>{a.nome}</span>
+                        </button>
+                      );
+                    })}
+                  </div>
+                </div>
+              )}
             </div>
           </div>
 
