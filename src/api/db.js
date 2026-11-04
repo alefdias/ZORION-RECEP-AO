@@ -385,6 +385,23 @@ export const PacienteService = {
     `;
     await executePostgres(q);
     await logAuditoria("REINTERNACAO", id, { alaNome, leito, reinternadoEm: now });
+  },
+
+  async delete(id, { motivo = "", usuario = "Recepção" } = {}) {
+    const now = new Date().toISOString();
+    const safeMotivo = (motivo || "").replace(/'/g, "''");
+    const safeUsuario = (usuario || "Recepção").replace(/'/g, "''");
+
+    const q = `
+      UPDATE "Paciente" SET
+        "deleted_at" = '${now}',
+        "observacoes" = COALESCE("observacoes", '') || ' [Excluído em ${new Date().toLocaleDateString('pt-BR')}: ${safeMotivo}]'
+      WHERE "id" = '${id}';
+      NOTIFY table_change, 'Paciente';
+      NOTIFY app_update, 'Paciente';
+    `;
+    await executePostgres(q);
+    await logAuditoria("EXCLUIR_PACIENTE", id, { motivo: safeMotivo, usuario: safeUsuario, data_hora: now });
   }
 };
 

@@ -210,138 +210,230 @@ export function AtendimentosRecepcao({
         ? new Date(item.dataAdmissao + "T12:00:00").toLocaleDateString("pt-BR")
         : "--";
 
-      const badgeColor = item.motivo === "Admissão" 
-        ? "background: #e0f2fe; color: #0369a1; border: 1px solid #bae6fd;" 
-        : item.motivo === "Alta" 
-        ? "background: #dcfce7; color: #15803d; border: 1px solid #bbf7d0;"
-        : "background: #f1f5f9; color: #475569; border: 1px solid #e2e8f0;";
+      let statusBadge = "Em Aberto";
+      let statusColor = "background: #f1f5f9; color: #475569; border: 1px solid #cbd5e1;";
+      if (item.status_admissao === "admitido" || item.motivo === "Admissão") {
+        statusBadge = "🏥 Admitido";
+        statusColor = "background: #dcfce7; color: #166534; border: 1px solid #86efac;";
+      } else if (item.status_admissao === "recusado" || item.motivo === "Alta") {
+        statusBadge = "✖ Recusado / Alta";
+        statusColor = "background: #fee2e2; color: #991b1b; border: 1px solid #fca5a5;";
+      } else if (item.horarioSaidaConsultorio) {
+        statusBadge = "Consulta Finalizada";
+        statusColor = "background: #e0f2fe; color: #0369a1; border: 1px solid #bae6fd;";
+      } else if (item.horarioEntradaConsultorio) {
+        statusBadge = "Em Consulta";
+        statusColor = "background: #fef3c7; color: #92400e; border: 1px solid #fde68a;";
+      }
 
       return `
         <tr style="border-bottom: 1px solid #e2e8f0; font-size: 11px;">
-          <td style="padding: 7px 8px; font-weight: 700; color: #0f172a;">
+          <td style="padding: 6px 8px; font-weight: 700; color: #0f172a;">
             ${item.pacienteNome || "--"}
-            ${item.prontuario ? `<br><span style="font-size: 9px; font-family: monospace; color: #64748b;">Pront: ${item.prontuario}</span>` : ""}
           </td>
-          <td style="padding: 7px 6px; text-align: center; color: #475569;">${dataFmt}</td>
-          <td style="padding: 7px 6px; text-align: center; font-weight: 700; color: #0369a1; font-family: monospace;">${item.horarioEntrada || "--"}</td>
-          <td style="padding: 7px 6px; text-align: center; font-family: monospace;">${item.horarioAvisoEquipe || "--"}</td>
-          <td style="padding: 7px 6px; text-align: center; font-family: monospace;">${item.horarioEntradaConsultorio || "--"}</td>
-          <td style="padding: 7px 6px; text-align: center; font-family: monospace;">${item.horarioSaidaConsultorio || "--"}</td>
-          <td style="padding: 7px 6px; text-align: center;">
-            <span style="display: inline-block; padding: 2px 7px; border-radius: 9999px; font-size: 10px; font-weight: 700; ${badgeColor}">
-              ${item.motivo || "Consulta"}
+          <td style="padding: 6px 6px; text-align: center; font-family: monospace; font-size: 10px; color: #475569;">
+            ${item.prontuario || "—"}
+          </td>
+          <td style="padding: 6px 6px; text-align: center; color: #475569;">${dataFmt}</td>
+          <td style="padding: 6px 6px; text-align: center; font-weight: 700; color: #0284c7; font-family: monospace;">${item.horarioEntrada || "--"}</td>
+          <td style="padding: 6px 6px; text-align: center; font-family: monospace; color: #64748b;">${item.horarioAvisoEquipe || "--"}</td>
+          <td style="padding: 6px 6px; text-align: center; font-family: monospace; color: #64748b;">${item.horarioEntradaConsultorio || "--"}</td>
+          <td style="padding: 6px 6px; text-align: center; font-family: monospace; color: #64748b;">${item.horarioSaidaConsultorio || "--"}</td>
+          <td style="padding: 6px 6px; text-align: center; font-family: monospace; font-weight: 700; color: #059669;">${item.tempoAtendimento || "--"}</td>
+          <td style="padding: 6px 6px; text-align: center; font-weight: 600; color: #334155;">${item.motivo || "Consulta"}</td>
+          <td style="padding: 6px 6px; text-align: center; font-weight: 600; color: #0369a1;">${item.alaDestinoNome || "--"}</td>
+          <td style="padding: 6px 6px; text-align: center;">
+            <span style="display: inline-block; padding: 2px 7px; border-radius: 6px; font-size: 10px; font-weight: 700; ${statusColor}">
+              ${statusBadge}
             </span>
           </td>
-          <td style="padding: 7px 6px; text-align: center; color: #334155; font-weight: 600;">${item.alaDestinoNome || "--"}</td>
-          <td style="padding: 7px 6px; text-align: center; font-family: monospace; font-weight: 700; color: #059669;">${item.tempoAtendimento || "--"}</td>
         </tr>
       `;
     }).join("");
 
-    const printWindow = window.open("", "_blank");
-    if (!printWindow) {
-      window.print();
-      return;
-    }
-
-    printWindow.document.write(`
+    const reportHtml = `
       <!DOCTYPE html>
       <html lang="pt-BR">
       <head>
         <meta charset="UTF-8">
-        <title>Relatório de Atendimento e Triagem — Zorion Saúde</title>
+        <title>Relatório de Atendimento e Triagem — Zorion Hospitalar</title>
         <style>
           * { box-sizing: border-box; margin: 0; padding: 0; }
-          body { font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif; color: #1e293b; padding: 20px; font-size: 11px; }
-          .header { border-bottom: 2px solid #0284c7; padding-bottom: 12px; margin-bottom: 16px; display: flex; justify-content: space-between; align-items: flex-end; }
-          .title { font-size: 18px; font-weight: 900; color: #0369a1; text-transform: uppercase; letter-spacing: 0.5px; }
-          .subtitle { font-size: 11px; color: #64748b; margin-top: 3px; }
-          .meta { text-align: right; font-size: 10px; color: #64748b; }
-          .metrics { display: flex; gap: 10px; margin-bottom: 16px; }
-          .metric-card { flex: 1; padding: 8px 12px; background: #f8fafc; border: 1px solid #e2e8f0; border-radius: 8px; text-align: center; }
-          .metric-num { font-size: 16px; font-weight: 900; color: #0f172a; }
-          .metric-label { font-size: 9px; text-transform: uppercase; color: #64748b; font-weight: 700; margin-top: 2px; }
-          table { width: 100%; border-collapse: collapse; margin-top: 8px; }
-          th { background: #f1f5f9; color: #475569; font-size: 10px; font-weight: 800; text-transform: uppercase; padding: 8px 6px; text-align: center; border-bottom: 2px solid #cbd5e1; }
+          body {
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+            color: #0f172a;
+            padding: 15px 20px;
+            font-size: 11px;
+            background: #fff;
+          }
+          .header {
+            border-bottom: 2px solid #0284c7;
+            padding-bottom: 10px;
+            margin-bottom: 12px;
+            display: flex;
+            justify-content: space-between;
+            align-items: flex-end;
+          }
+          .brand {
+            font-size: 18px;
+            font-weight: 900;
+            color: #0284c7;
+            letter-spacing: -0.5px;
+          }
+          .brand span { color: #0f172a; }
+          .title {
+            font-size: 13px;
+            font-weight: 800;
+            color: #334155;
+            text-transform: uppercase;
+            margin-top: 2px;
+          }
+          .meta {
+            text-align: right;
+            font-size: 10px;
+            color: #475569;
+            line-height: 1.4;
+          }
+          table {
+            width: 100%;
+            border-collapse: collapse;
+            margin-top: 5px;
+          }
+          th {
+            background: #f8fafc;
+            color: #334155;
+            font-size: 10px;
+            font-weight: 800;
+            text-transform: uppercase;
+            padding: 7px 6px;
+            text-align: center;
+            border-top: 1px solid #cbd5e1;
+            border-bottom: 2px solid #94a3b8;
+          }
           th:first-child { text-align: left; padding-left: 8px; }
-          .footer { margin-top: 20px; padding-top: 10px; border-top: 1px solid #e2e8f0; display: flex; justify-content: space-between; font-size: 9px; color: #94a3b8; }
+          .footer {
+            margin-top: 15px;
+            padding-top: 8px;
+            border-top: 1px solid #cbd5e1;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            font-size: 9px;
+            color: #64748b;
+          }
+          .signatures {
+            margin-top: 30px;
+            display: flex;
+            justify-content: space-around;
+            text-align: center;
+            font-size: 10px;
+            color: #475569;
+          }
+          .sign-line {
+            width: 240px;
+            border-top: 1px solid #94a3b8;
+            padding-top: 4px;
+            font-weight: 600;
+          }
+          @page {
+            size: A4 landscape;
+            margin: 8mm 10mm;
+          }
           @media print {
             body { padding: 0; }
-            @page { size: landscape; margin: 12mm; }
+            @page { size: A4 landscape; margin: 8mm 10mm; }
           }
         </style>
       </head>
       <body>
         <div class="header">
           <div>
-            <div class="title">🏥 Zorion Hospitalar • Controle de Atendimento & Triagem</div>
-            <div class="subtitle">Acolhimento, tempos de espera, consultório médico e encaminhamentos</div>
+            <div class="brand">ZOR<span>ION</span> HOSPITALAR</div>
+            <div class="title">Controle de Atendimento & Triagem (Recepção)</div>
           </div>
           <div class="meta">
-            <div><b>Emissão:</b> ${dataHojeFormatada} às ${horaAgoraFormatada}</div>
-            <div><b>Filtro de Data:</b> ${dataFilter || "Todos os registros"}</div>
-            <div><b>Total de Atendimentos:</b> ${filteredAtendimentos.length}</div>
-          </div>
-        </div>
-
-        <div class="metrics">
-          <div class="metric-card">
-            <div class="metric-num">${metrics.totalHoje}</div>
-            <div class="metric-label">Total Hoje</div>
-          </div>
-          <div class="metric-card">
-            <div class="metric-num" style="color: #d97706;">${metrics.emEspera}</div>
-            <div class="metric-label">Aguardando</div>
-          </div>
-          <div class="metric-card">
-            <div class="metric-num" style="color: #4f46e5;">${metrics.emConsultorio}</div>
-            <div class="metric-label">Em Consulta</div>
-          </div>
-          <div class="metric-card">
-            <div class="metric-num" style="color: #059669;">${metrics.admissoesHoje}</div>
-            <div class="metric-label">Admissões</div>
-          </div>
-          <div class="metric-card">
-            <div class="metric-num">${metrics.tempoMedioFmt}</div>
-            <div class="metric-label">Tempo Médio</div>
+            <div><b>Data de Emissão:</b> ${dataHojeFormatada} às ${horaAgoraFormatada}</div>
+            <div><b>Filtro de Data:</b> ${dataFilter ? dataFilter : "Todos os registros"}</div>
+            <div><b>Total de Atendimentos:</b> ${filteredAtendimentos.length} paciente(s)</div>
+            <div><b>Operador / Recepção:</b> ${currentUser?.nome || "Recepção"}</div>
           </div>
         </div>
 
         <table>
           <thead>
             <tr>
-              <th style="width: 20%;">Paciente</th>
-              <th style="width: 8%;">Data</th>
-              <th style="width: 8%;">Entrada</th>
-              <th style="width: 8%;">Aviso</th>
-              <th style="width: 9%;">Entr. Consult.</th>
-              <th style="width: 9%;">Saída Consult.</th>
-              <th style="width: 12%;">Desfecho</th>
-              <th style="width: 14%;">Ala Destino</th>
-              <th style="width: 12%;">Tempo Total</th>
+              <th style="width: 18%;">Paciente</th>
+              <th style="width: 8%;">Prontuário</th>
+              <th style="width: 7%;">Data</th>
+              <th style="width: 7%;">Entrada</th>
+              <th style="width: 7%;">Aviso Eq.</th>
+              <th style="width: 8%;">Entr. Consult.</th>
+              <th style="width: 8%;">Saída Consult.</th>
+              <th style="width: 8%;">Tempo Total</th>
+              <th style="width: 10%;">Motivo</th>
+              <th style="width: 10%;">Ala Destino</th>
+              <th style="width: 9%;">Status / Desfecho</th>
             </tr>
           </thead>
           <tbody>
-            ${rowsHtml || '<tr><td colspan="9" style="text-align: center; padding: 20px; color: #94a3b8;">Nenhum atendimento no período selecionado.</td></tr>'}
+            ${rowsHtml || '<tr><td colspan="11" style="text-align: center; padding: 25px; color: #94a3b8;">Nenhum registro de atendimento encontrado.</td></tr>'}
           </tbody>
         </table>
 
-        <div class="footer">
-          <span>Sistema Zorion Recepção &copy; ${new Date().getFullYear()}</span>
-          <span>Documento gerado automaticamente para controle interno e auditoria</span>
+        <div class="signatures">
+          <div>
+            <div class="sign-line">Responsável pela Recepção</div>
+            <div>${currentUser?.nome || "Recepção"}</div>
+          </div>
+          <div>
+            <div class="sign-line">Coordenação / Supervisão</div>
+            <div>Visto / Auditoria Interna</div>
+          </div>
         </div>
 
-        <script>
-          window.onload = function() {
-            setTimeout(function() {
-              window.print();
-            }, 300);
-          };
-        </script>
+        <div class="footer">
+          <span>Zorion Saúde • Módulo Recepção & Triagem</span>
+          <span>Relatório oficial emitido em folha horizontal (A4 Paisagem)</span>
+        </div>
       </body>
       </html>
-    `);
-    printWindow.document.close();
+    `;
+
+    // Utiliza iframe oculto injetado temporariamente para impressão 100% isolada e compatível com WebView2/Tauri
+    const iframe = document.createElement("iframe");
+    iframe.style.position = "fixed";
+    iframe.style.right = "0";
+    iframe.style.bottom = "0";
+    iframe.style.width = "0";
+    iframe.style.height = "0";
+    iframe.style.border = "0";
+    iframe.style.zIndex = "-9999";
+    document.body.appendChild(iframe);
+
+    try {
+      const doc = iframe.contentWindow.document;
+      doc.open();
+      doc.write(reportHtml);
+      doc.close();
+
+      setTimeout(() => {
+        iframe.contentWindow.focus();
+        iframe.contentWindow.print();
+        setTimeout(() => {
+          try {
+            document.body.removeChild(iframe);
+          } catch (e) {}
+        }, 1500);
+      }, 350);
+    } catch (e) {
+      console.warn("Falha no iframe de impressão, fallback janela:", e);
+      const w = window.open("", "_blank");
+      if (w) {
+        w.document.write(reportHtml);
+        w.document.close();
+        setTimeout(() => w.print(), 350);
+      }
+    }
   };
 
   // Abre o modal de admissão rápida para paciente que está em consulta

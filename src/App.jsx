@@ -327,10 +327,12 @@ export function App() {
             key={pacientesStatusFilter}
             patients={patients}
             alas={alas}
+            currentUser={currentUser}
             initialStatusFilter={pacientesStatusFilter}
             onNewPatient={handleOpenNewPatient}
             onEditPatient={handleOpenEditPatient}
             onReinternar={handleOpenReinternar}
+            onRefresh={handleRefreshAll}
           />
         )}
 
