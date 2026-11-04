@@ -55,6 +55,7 @@ export function AtendimentosRecepcao({
   const [admissaoModal, setAdmissaoModal] = useState(false);
   const [admissaoItem, setAdmissaoItem] = useState(null);
   const [admissaoProntuario, setAdmissaoProntuario] = useState("");
+  const [admissaoAlaId, setAdmissaoAlaId] = useState("");
   const [isSavingAdmissao, setIsSavingAdmissao] = useState(false);
 
   const hojeStr = format(new Date(), "yyyy-MM-dd");
@@ -187,33 +188,208 @@ export function AtendimentosRecepcao({
   };
 
   const handlePrint = () => {
-    window.print();
+    const dataHojeFormatada = new Date().toLocaleDateString("pt-BR", {
+      day: "2-digit",
+      month: "2-digit",
+      year: "numeric"
+    });
+    const horaAgoraFormatada = new Date().toLocaleTimeString("pt-BR", {
+      hour: "2-digit",
+      minute: "2-digit"
+    });
+
+    const rowsHtml = (filteredAtendimentos || []).map((item, idx) => {
+      const dataFmt = item.dataAdmissao 
+        ? new Date(item.dataAdmissao + "T12:00:00").toLocaleDateString("pt-BR")
+        : "--";
+
+      const badgeColor = item.motivo === "Admissão" 
+        ? "background: #e0f2fe; color: #0369a1; border: 1px solid #bae6fd;" 
+        : item.motivo === "Alta" 
+        ? "background: #dcfce7; color: #15803d; border: 1px solid #bbf7d0;"
+        : "background: #f1f5f9; color: #475569; border: 1px solid #e2e8f0;";
+
+      return `
+        <tr style="border-bottom: 1px solid #e2e8f0; font-size: 11px;">
+          <td style="padding: 7px 8px; font-weight: 700; color: #0f172a;">
+            ${item.pacienteNome || "--"}
+            ${item.prontuario ? `<br><span style="font-size: 9px; font-family: monospace; color: #64748b;">Pront: ${item.prontuario}</span>` : ""}
+          </td>
+          <td style="padding: 7px 6px; text-align: center; color: #475569;">${dataFmt}</td>
+          <td style="padding: 7px 6px; text-align: center; font-weight: 700; color: #0369a1; font-family: monospace;">${item.horarioEntrada || "--"}</td>
+          <td style="padding: 7px 6px; text-align: center; font-family: monospace;">${item.horarioAvisoEquipe || "--"}</td>
+          <td style="padding: 7px 6px; text-align: center; font-family: monospace;">${item.horarioEntradaConsultorio || "--"}</td>
+          <td style="padding: 7px 6px; text-align: center; font-family: monospace;">${item.horarioSaidaConsultorio || "--"}</td>
+          <td style="padding: 7px 6px; text-align: center;">
+            <span style="display: inline-block; padding: 2px 7px; border-radius: 9999px; font-size: 10px; font-weight: 700; ${badgeColor}">
+              ${item.motivo || "Consulta"}
+            </span>
+          </td>
+          <td style="padding: 7px 6px; text-align: center; color: #334155; font-weight: 600;">${item.alaDestinoNome || "--"}</td>
+          <td style="padding: 7px 6px; text-align: center; font-family: monospace; font-weight: 700; color: #059669;">${item.tempoAtendimento || "--"}</td>
+        </tr>
+      `;
+    }).join("");
+
+    const printWindow = window.open("", "_blank");
+    if (!printWindow) {
+      window.print();
+      return;
+    }
+
+    printWindow.document.write(`
+      <!DOCTYPE html>
+      <html lang="pt-BR">
+      <head>
+        <meta charset="UTF-8">
+        <title>Relatório de Atendimento e Triagem — Zorion Saúde</title>
+        <style>
+          * { box-sizing: border-box; margin: 0; padding: 0; }
+          body { font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif; color: #1e293b; padding: 20px; font-size: 11px; }
+          .header { border-bottom: 2px solid #0284c7; padding-bottom: 12px; margin-bottom: 16px; display: flex; justify-content: space-between; align-items: flex-end; }
+          .title { font-size: 18px; font-weight: 900; color: #0369a1; text-transform: uppercase; letter-spacing: 0.5px; }
+          .subtitle { font-size: 11px; color: #64748b; margin-top: 3px; }
+          .meta { text-align: right; font-size: 10px; color: #64748b; }
+          .metrics { display: flex; gap: 10px; margin-bottom: 16px; }
+          .metric-card { flex: 1; padding: 8px 12px; background: #f8fafc; border: 1px solid #e2e8f0; border-radius: 8px; text-align: center; }
+          .metric-num { font-size: 16px; font-weight: 900; color: #0f172a; }
+          .metric-label { font-size: 9px; text-transform: uppercase; color: #64748b; font-weight: 700; margin-top: 2px; }
+          table { width: 100%; border-collapse: collapse; margin-top: 8px; }
+          th { background: #f1f5f9; color: #475569; font-size: 10px; font-weight: 800; text-transform: uppercase; padding: 8px 6px; text-align: center; border-bottom: 2px solid #cbd5e1; }
+          th:first-child { text-align: left; padding-left: 8px; }
+          .footer { margin-top: 20px; padding-top: 10px; border-top: 1px solid #e2e8f0; display: flex; justify-content: space-between; font-size: 9px; color: #94a3b8; }
+          @media print {
+            body { padding: 0; }
+            @page { size: landscape; margin: 12mm; }
+          }
+        </style>
+      </head>
+      <body>
+        <div class="header">
+          <div>
+            <div class="title">🏥 Zorion Hospitalar • Controle de Atendimento & Triagem</div>
+            <div class="subtitle">Acolhimento, tempos de espera, consultório médico e encaminhamentos</div>
+          </div>
+          <div class="meta">
+            <div><b>Emissão:</b> ${dataHojeFormatada} às ${horaAgoraFormatada}</div>
+            <div><b>Filtro de Data:</b> ${dataFilter || "Todos os registros"}</div>
+            <div><b>Total de Atendimentos:</b> ${filteredAtendimentos.length}</div>
+          </div>
+        </div>
+
+        <div class="metrics">
+          <div class="metric-card">
+            <div class="metric-num">${metrics.totalHoje}</div>
+            <div class="metric-label">Total Hoje</div>
+          </div>
+          <div class="metric-card">
+            <div class="metric-num" style="color: #d97706;">${metrics.emEspera}</div>
+            <div class="metric-label">Aguardando</div>
+          </div>
+          <div class="metric-card">
+            <div class="metric-num" style="color: #4f46e5;">${metrics.emConsultorio}</div>
+            <div class="metric-label">Em Consulta</div>
+          </div>
+          <div class="metric-card">
+            <div class="metric-num" style="color: #059669;">${metrics.admissoesHoje}</div>
+            <div class="metric-label">Admissões</div>
+          </div>
+          <div class="metric-card">
+            <div class="metric-num">${metrics.tempoMedioFmt}</div>
+            <div class="metric-label">Tempo Médio</div>
+          </div>
+        </div>
+
+        <table>
+          <thead>
+            <tr>
+              <th style="width: 20%;">Paciente</th>
+              <th style="width: 8%;">Data</th>
+              <th style="width: 8%;">Entrada</th>
+              <th style="width: 8%;">Aviso</th>
+              <th style="width: 9%;">Entr. Consult.</th>
+              <th style="width: 9%;">Saída Consult.</th>
+              <th style="width: 12%;">Desfecho</th>
+              <th style="width: 14%;">Ala Destino</th>
+              <th style="width: 12%;">Tempo Total</th>
+            </tr>
+          </thead>
+          <tbody>
+            ${rowsHtml || '<tr><td colspan="9" style="text-align: center; padding: 20px; color: #94a3b8;">Nenhum atendimento no período selecionado.</td></tr>'}
+          </tbody>
+        </table>
+
+        <div class="footer">
+          <span>Sistema Zorion Recepção &copy; ${new Date().getFullYear()}</span>
+          <span>Documento gerado automaticamente para controle interno e auditoria</span>
+        </div>
+
+        <script>
+          window.onload = function() {
+            setTimeout(function() {
+              window.print();
+            }, 300);
+          };
+        </script>
+      </body>
+      </html>
+    `);
+    printWindow.document.close();
   };
 
   // Abre o modal de admissão rápida para paciente que está em consulta
   const handleAbrirAdmissao = (item) => {
     setAdmissaoItem(item);
     setAdmissaoProntuario(item.prontuario || "");
+    setAdmissaoAlaId(item.alaDestinoId || (alas && alas.length > 0 ? alas[0].id : ""));
     setAdmissaoModal(true);
   };
 
-  // Confirmar admissão: registra motivo "Admissão" no atendimento e cria paciente no banco
+  // Confirmar admissão: CADASTRAR O PACIENTE NO HOSPITAL e atualizar o atendimento
   const handleConfirmarAdmissao = async () => {
     if (!admissaoItem) return;
     setIsSavingAdmissao(true);
     try {
-      // Atualiza o atendimento com motivo Admissão e prontuário informado
+      const alaObj = (alas || []).find(a => String(a.id) === String(admissaoAlaId));
+      const prontFinal = admissaoProntuario.trim() || admissaoItem.prontuario || "";
+
+      // 1. Cadastra ou reinterna o paciente na tabela Paciente do hospital
+      let pacId = admissaoItem.pacienteId;
+      if (!pacId) {
+        const novoPac = await PacienteService.create({
+          nome: admissaoItem.pacienteNome,
+          prontuario: prontFinal,
+          alaId: alaObj ? alaObj.id : "",
+          alaNome: alaObj ? alaObj.nome : "",
+          observacoes: `Admitido via Atendimento Recepção em ${new Date().toLocaleDateString('pt-BR')}`
+        });
+        pacId = novoPac?.id || null;
+      } else {
+        // Se já existia ID, atualiza para Ativo na ala
+        await PacienteService.update(pacId, {
+          nome: admissaoItem.pacienteNome,
+          prontuario: prontFinal,
+          alaId: alaObj ? alaObj.id : "",
+          alaNome: alaObj ? alaObj.nome : ""
+        });
+      }
+
+      // 2. Atualiza o atendimento de recepção
       await AtendimentoRecepcaoService.update(admissaoItem.id, {
         ...admissaoItem,
+        pacienteId: pacId,
+        prontuario: prontFinal,
         motivo: "Admissão",
-        prontuario: admissaoProntuario.trim() || admissaoItem.prontuario || "",
+        alaDestinoId: alaObj ? alaObj.id : "",
+        alaDestinoNome: alaObj ? alaObj.nome : "",
         status: "Finalizado"
       });
 
-      toast.success(`✅ Paciente "${admissaoItem.pacienteNome}" admitido com sucesso!`);
+      toast.success(`✅ Paciente "${admissaoItem.pacienteNome}" CADASTRADO E ADMITIDO no hospital!`);
       setAdmissaoModal(false);
       setAdmissaoItem(null);
       setAdmissaoProntuario("");
+      setAdmissaoAlaId("");
       if (onRefresh) onRefresh();
     } catch (err) {
       console.error(err);
@@ -591,11 +767,8 @@ export function AtendimentosRecepcao({
                       <td className="py-3 px-4 text-right">
                         <div className="flex items-center justify-end gap-1.5 opacity-90 group-hover:opacity-100 flex-wrap">
 
-                          {/* Botões Admitir / Não Admitir — aparecem para pacientes EM CONSULTA (entrou, não saiu, sem desfecho) */}
-                          {item.horarioEntradaConsultorio &&
-                           !item.horarioSaidaConsultorio &&
-                           item.motivo !== "Admissão" &&
-                           item.motivo !== "Alta" && (
+                          {/* Botões Admitir / Não Admitir — disponíveis para paciente em atendimento */}
+                          {item.motivo !== "Admissão" && item.motivo !== "Alta" && (
                             <>
                               <button
                                 onClick={() => handleAbrirAdmissao(item)}
@@ -718,15 +891,32 @@ export function AtendimentosRecepcao({
                 autoFocus
               />
               <p className="text-[10px] text-slate-400 mt-1">
-                O nome já está salvo. Informe apenas o número do prontuário para finalizar a admissão.
+                O nome já está salvo. Informe o número do prontuário para cadastrar a admissão.
               </p>
+            </div>
+
+            {/* Seleção de Ala de Internação */}
+            <div>
+              <Label className="text-xs font-bold text-slate-700 mb-1.5 block">
+                Ala de Internação:
+              </Label>
+              <select
+                value={admissaoAlaId}
+                onChange={(e) => setAdmissaoAlaId(e.target.value)}
+                className="w-full h-10 px-3 rounded-lg border border-emerald-300 text-xs font-semibold bg-white text-slate-800 outline-none focus:ring-2 focus:ring-emerald-500"
+              >
+                <option value="">Selecione uma ala...</option>
+                {(alas || []).map(a => (
+                  <option key={a.id} value={a.id}>{a.nome}</option>
+                ))}
+              </select>
             </div>
           </div>
 
           <DialogFooter className="px-5 pb-5 flex gap-2 justify-end">
             <Button
               variant="outline"
-              onClick={() => { setAdmissaoModal(false); setAdmissaoItem(null); setAdmissaoProntuario(""); }}
+              onClick={() => { setAdmissaoModal(false); setAdmissaoItem(null); setAdmissaoProntuario(""); setAdmissaoAlaId(""); }}
               className="text-xs h-9 cursor-pointer"
             >
               Cancelar
@@ -736,7 +926,7 @@ export function AtendimentosRecepcao({
               disabled={isSavingAdmissao}
               className="bg-emerald-600 hover:bg-emerald-700 text-white font-bold text-xs h-9 cursor-pointer gap-1.5 shadow-sm"
             >
-              {isSavingAdmissao ? "Salvando..." : "✅ Confirmar Admissão"}
+              {isSavingAdmissao ? "Salvando..." : "✅ Cadastrar e Admitir"}
             </Button>
           </DialogFooter>
         </DialogContent>

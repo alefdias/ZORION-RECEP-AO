@@ -50,7 +50,7 @@ export function AtendimentoModal({
     horarioAvisoEquipe: "",
     horarioEntradaConsultorio: "",
     horarioSaidaConsultorio: "",
-    motivo: "Admissão",
+    motivo: "Consulta",
     alaDestinoId: "",
     alaDestinoNome: "",
     observacoes: ""
@@ -82,7 +82,7 @@ export function AtendimentoModal({
         horarioAvisoEquipe: atendimento.horarioAvisoEquipe || "",
         horarioEntradaConsultorio: atendimento.horarioEntradaConsultorio || "",
         horarioSaidaConsultorio: atendimento.horarioSaidaConsultorio || "",
-        motivo: atendimento.motivo || "Admissão",
+        motivo: atendimento.motivo || "Consulta",
         alaDestinoId: atendimento.alaDestinoId || "",
         alaDestinoNome: atendimento.alaDestinoNome || "",
         observacoes: atendimento.observacoes || ""
@@ -110,7 +110,7 @@ export function AtendimentoModal({
         horarioAvisoEquipe: "",
         horarioEntradaConsultorio: "",
         horarioSaidaConsultorio: "",
-        motivo: "Admissão",
+        motivo: "Consulta",
         alaDestinoId: "",
         alaDestinoNome: "",
         observacoes: ""
