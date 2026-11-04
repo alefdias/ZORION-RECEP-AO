@@ -205,6 +205,7 @@ export async function ensureRecepcaoTables() {
       ALTER TABLE "AtendimentoRecepcao" ADD COLUMN IF NOT EXISTS "observacoes" TEXT;
       ALTER TABLE "AtendimentoRecepcao" ADD COLUMN IF NOT EXISTS "recepcionista" TEXT;
       ALTER TABLE "AtendimentoRecepcao" ADD COLUMN IF NOT EXISTS "status" TEXT DEFAULT 'Aguardando';
+      ALTER TABLE "AtendimentoRecepcao" ADD COLUMN IF NOT EXISTS "status_admissao" TEXT DEFAULT 'pendente';
       ALTER TABLE "AtendimentoRecepcao" ADD COLUMN IF NOT EXISTS "created_at" TEXT;
       ALTER TABLE "AtendimentoRecepcao" ADD COLUMN IF NOT EXISTS "updated_at" TEXT;
       ALTER TABLE "AtendimentoRecepcao" ADD COLUMN IF NOT EXISTS "deleted_at" TEXT;
@@ -695,6 +696,7 @@ export const AtendimentoRecepcaoService = {
 
     const safeObs = (data.observacoes || "").replace(/'/g, "''");
     const safeRecepcionista = (data.recepcionista || "Recepção").replace(/'/g, "''");
+    const safeStatusAdmissao = (data.status_admissao || "pendente").replace(/'/g, "''");
 
     let status = "Aguardando";
     if (safeSaidaCons) {
@@ -710,12 +712,12 @@ export const AtendimentoRecepcaoService = {
         "id", "pacienteId", "pacienteNome", "prontuario", "dataAdmissao",
         "horarioEntrada", "horarioAvisoEquipe", "horarioEntradaConsultorio", "horarioSaidaConsultorio",
         "motivo", "alaDestinoId", "alaDestinoNome", "tempoAtendimento", "tempoEspera", "tempoConsultorio",
-        "observacoes", "recepcionista", "status", "created_at"
+        "observacoes", "recepcionista", "status", "status_admissao", "created_at"
       ) VALUES (
         '${id}', '${safePacienteId}', '${safePacienteNome}', '${safeProntuario}', '${safeDataAdmissao}',
         '${safeEntrada}', '${safeAviso}', '${safeEntradaCons}', '${safeSaidaCons}',
         '${safeMotivo}', '${safeAlaId}', '${safeAlaNome}', '${tempoAtendimento}', '${tempoEspera}', '${tempoConsultorio}',
-        '${safeObs}', '${safeRecepcionista}', '${status}', '${now}'
+        '${safeObs}', '${safeRecepcionista}', '${status}', '${safeStatusAdmissao}', '${now}'
       );
     `;
     await executePostgres(q);
@@ -747,6 +749,7 @@ export const AtendimentoRecepcaoService = {
     if (data.alaDestinoId !== undefined) sets.push(`"alaDestinoId" = '${(data.alaDestinoId || "").replace(/'/g, "''")}'`);
     if (data.alaDestinoNome !== undefined) sets.push(`"alaDestinoNome" = '${(data.alaDestinoNome || "").replace(/'/g, "''")}'`);
     if (data.observacoes !== undefined) sets.push(`"observacoes" = '${(data.observacoes || "").replace(/'/g, "''")}'`);
+    if (data.status_admissao !== undefined) sets.push(`"status_admissao" = '${(data.status_admissao || "").replace(/'/g, "''")}'`);
 
     // Recalcula tempos se algum horário for fornecido
     const tempoAtendimento = this.calcularDiferenca(data.horarioEntrada, data.horarioSaidaConsultorio);

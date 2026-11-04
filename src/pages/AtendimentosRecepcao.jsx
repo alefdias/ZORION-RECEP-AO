@@ -380,6 +380,7 @@ export function AtendimentosRecepcao({
         pacienteId: pacId,
         prontuario: prontFinal,
         motivo: "Admissão",
+        status_admissao: "admitido",
         alaDestinoId: alaObj ? alaObj.id : "",
         alaDestinoNome: alaObj ? alaObj.nome : "",
         status: "Finalizado"
@@ -399,20 +400,21 @@ export function AtendimentosRecepcao({
     }
   };
 
-  // Não admitido: registra motivo "Alta" (liberado sem internação) no atendimento
-  const handleNaoAdmitido = async (item) => {
-    if (!confirm(`Confirmar que "${item.pacienteNome}" NÃO será admitido (liberado sem internação)?`)) return;
+  // Recusar admissão: registra status_admissao = "recusado" e motivo "Alta" (liberado sem internação)
+  const handleRecusarAdmissao = async (item) => {
+    if (!confirm(`Confirmar que o atendimento de "${item.pacienteNome}" foi RECUSADO (liberado sem internação)?`)) return;
     try {
       await AtendimentoRecepcaoService.update(item.id, {
         ...item,
+        status_admissao: "recusado",
         motivo: "Alta",
         status: "Finalizado"
       });
-      toast.success(`Paciente "${item.pacienteNome}" marcado como Não Admitido / Liberado.`);
+      toast.success(`Paciente "${item.pacienteNome}" registrado como Recusado.`);
       if (onRefresh) onRefresh();
     } catch (err) {
       console.error(err);
-      toast.error("Erro ao registrar não admissão.");
+      toast.error("Erro ao registrar recusa.");
     }
   };
 
@@ -767,36 +769,46 @@ export function AtendimentosRecepcao({
                       <td className="py-3 px-4 text-right">
                         <div className="flex items-center justify-end gap-1.5 opacity-90 group-hover:opacity-100 flex-wrap">
 
-                          {/* Botões Admitir / Não Admitir — disponíveis para paciente em atendimento */}
-                          {item.motivo !== "Admissão" && item.motivo !== "Alta" && (
-                            <>
+                          {/* Ações de Admissão: Admitir ou Recusar */}
+                          {item.status_admissao !== "admitido" && item.status_admissao !== "recusado" && (
+                            <div className="flex items-center gap-1">
                               <button
                                 onClick={() => handleAbrirAdmissao(item)}
                                 title="Admitir paciente ao hospital"
-                                className="flex items-center gap-1 text-[10px] font-bold bg-emerald-50 hover:bg-emerald-500 text-emerald-700 hover:text-white border border-emerald-300 hover:border-emerald-500 px-2 py-1 rounded-lg transition-all cursor-pointer shadow-xs"
+                                className="flex items-center gap-1 text-[11px] font-bold bg-emerald-600 hover:bg-emerald-700 text-white px-2.5 py-1 rounded-lg transition-all cursor-pointer shadow-xs active:scale-95"
                               >
                                 🏥 Admitir
                               </button>
                               <button
-                                onClick={() => handleNaoAdmitido(item)}
-                                title="Não admitido — paciente liberado sem internação"
-                                className="flex items-center gap-1 text-[10px] font-bold bg-rose-50 hover:bg-rose-500 text-rose-700 hover:text-white border border-rose-300 hover:border-rose-500 px-2 py-1 rounded-lg transition-all cursor-pointer shadow-xs"
+                                onClick={() => handleRecusarAdmissao(item)}
+                                title="Recusar admissão — paciente liberado sem internação"
+                                className="flex items-center gap-1 text-[11px] font-bold bg-rose-50 hover:bg-rose-600 text-rose-700 hover:text-white border border-rose-300 hover:border-rose-600 px-2 py-1 rounded-lg transition-all cursor-pointer shadow-xs active:scale-95"
                               >
-                                ✖ Não Admitido
+                                ✖ Recusar
                               </button>
-                            </>
+                            </div>
                           )}
 
-                          {/* Badge de desfecho já registrado */}
-                          {item.motivo === "Admissão" && item.status === "Finalizado" && (
-                            <span className="text-[10px] font-bold text-emerald-700 bg-emerald-50 border border-emerald-200 px-2 py-0.5 rounded-lg">
+                          {/* Se já foi Admitido */}
+                          {item.status_admissao === "admitido" && (
+                            <button
+                              onClick={() => handleAbrirAdmissao(item)}
+                              title="Paciente Admitido no hospital (Clique para ver ou alterar dados da admissão)"
+                              className="flex items-center gap-1 text-[11px] font-bold text-emerald-800 bg-emerald-100 hover:bg-emerald-200 border border-emerald-300 px-2.5 py-1 rounded-lg transition-colors cursor-pointer shadow-2xs"
+                            >
                               🏥 Admitido
-                            </span>
+                            </button>
                           )}
-                          {item.motivo === "Alta" && item.status === "Finalizado" && (
-                            <span className="text-[10px] font-bold text-rose-700 bg-rose-50 border border-rose-200 px-2 py-0.5 rounded-lg">
-                              ✖ Não Admitido
-                            </span>
+
+                          {/* Se já foi Recusado */}
+                          {item.status_admissao === "recusado" && (
+                            <button
+                              onClick={() => handleAbrirAdmissao(item)}
+                              title="Paciente Recusado (Clique se desejar reverter e admitir)"
+                              className="flex items-center gap-1 text-[11px] font-bold text-rose-800 bg-rose-100 hover:bg-rose-200 border border-rose-300 px-2.5 py-1 rounded-lg transition-colors cursor-pointer shadow-2xs"
+                            >
+                              ✖ Recusado
+                            </button>
                           )}
 
                           <button
